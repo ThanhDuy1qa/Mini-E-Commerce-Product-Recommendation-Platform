@@ -1,0 +1,7 @@
+"node_modules/\n.env\ndist/\nbuild/" 
+
+node_modules
+backend/.env
+
+!.env.example
+backend/!.env.example
