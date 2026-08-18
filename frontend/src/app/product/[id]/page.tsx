@@ -1,9 +1,16 @@
-import Link from "next/link";
-import { mockProducts } from "../../page";
+"use client"; // Bắt buộc phải có để dùng được React Hooks (useCart, use)
 
-export default async function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  // Sửa thành product.asin
+import Link from "next/link";
+import { useCart } from "@/context/CartContext";
+import { mockProducts } from "@/app/page"; // Đường dẫn tuyệt đối, không lo lỗi "Module not found"
+import { use } from "react";
+
+export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
+  // Un-wrap params bằng React.use() theo chuẩn Client Component của Next.js
+  const resolvedParams = use(params);
+  const { addToCart } = useCart();
+  
+  // Tìm sản phẩm dựa trên ID (ASIN)
   const product = mockProducts.find((p) => p.asin === resolvedParams.id);
 
   if (!product) {
@@ -51,6 +58,7 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
             
             <button 
               disabled={isOutOfStock}
+              onClick={() => addToCart(product)} // Gắn hàm thêm vào giỏ hàng tại đây!
               className={`w-full font-bold text-lg py-4 rounded-xl transition-all shadow-lg 
                 ${isOutOfStock 
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed shadow-none" 
