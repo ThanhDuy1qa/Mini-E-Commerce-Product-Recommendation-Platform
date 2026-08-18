@@ -1,0 +1,3 @@
+npm init -y
+npm install express mongoose dotenv cors bcryptjs jsonwebtoken
+npm install -D concurrently
