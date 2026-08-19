@@ -24,10 +24,18 @@ export default function Navbar() {
       }
     };
 
+    // Load trạng thái lúc đầu
     checkAuth();
-    // Lắng nghe sự kiện để cập nhật Navbar ngay lập tức khi Đăng nhập/Đăng xuất
+
+    // Lắng nghe sự kiện custom "userLogin" khi vừa đăng nhập xong ở tab hiện tại
+    window.addEventListener("userLogin", checkAuth);
+    // Lắng nghe sự kiện "storage" cho các tab khác
     window.addEventListener("storage", checkAuth);
-    return () => window.removeEventListener("storage", checkAuth);
+
+    return () => {
+      window.removeEventListener("userLogin", checkAuth);
+      window.removeEventListener("storage", checkAuth);
+    };
   }, []);
 
   // Hàm xử lý khi bấm nút Đăng xuất
@@ -67,7 +75,7 @@ export default function Navbar() {
 
             <Link href="/cart" className="relative hover:text-blue-600 transition flex items-center gap-1">
               🛒 Cart
-              {/* Cục badge đỏ đỏ báo số lượng sản phẩm */}
+              {/* Cục badge đỏ báo số lượng sản phẩm */}
               {totalItems > 0 && (
                 <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1 animate-bounce">
                   {totalItems}

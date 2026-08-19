@@ -3,8 +3,7 @@ import Link from "next/link";
 // Dữ liệu giả lập danh sách đơn hàng
 const mockOrders = [
   { id: "ORD-00123", date: "August 18, 2026", total: 120.00, status: "Processing", items: 1 },
-  { id: "ORD-00098", date: "August 15, 2026", total: 46.49, status: "Delivered", items: 2 },
-  { id: "ORD-00045", date: "August 02, 2026", total: 210.50, status: "Cancelled", items: 3 },
+  
 ];
 
 export default function OrdersPage() {
