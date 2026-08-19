@@ -2,22 +2,30 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
-  _id: string;
-  name: string;
+  _id?: string;
+  asin?: string;
+  name?: string;
+  title?: string;
   price: number;
-  category: string;
-  image: string;
-  description: string;
+  category?: string;
+  main_cat?: string;
+  image?: string;
+  image_url?: string;
+  description?: string;
   stock: number;
 }
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const { addToCart } = useCart();
+  
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Gọi API lấy thông tin chi tiết sản phẩm từ Backend
   useEffect(() => {
     fetch(`http://localhost:5000/api/products/${resolvedParams.id}`)
       .then((res) => res.json())
@@ -44,6 +52,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   }
 
   const isOutOfStock = product.stock === 0;
+  const productName = product.name || product.title || "Product";
+  const productImage = product.image || product.image_url || "";
+  const productCategory = product.category || product.main_cat || "General";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -55,16 +66,16 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
         <div className="md:flex">
           <div className="md:w-1/2">
             <img 
-              src={product.image} 
-              alt={product.name} 
+              src={productImage} 
+              alt={productName} 
               className="w-full h-[400px] md:h-[500px] object-cover"
             />
           </div>
           
           <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-            <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">{product.category}</span>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2 mb-4">{product.name}</h1>
-            <p className="text-3xl font-bold text-red-600 mb-6">${product.price.toFixed(2)}</p>
+            <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">{productCategory}</span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2 mb-4">{productName}</h1>
+            <p className="text-3xl font-bold text-red-600 mb-6">${product.price?.toFixed(2)}</p>
             
             <div className="border-t border-b border-gray-200 py-6 mb-8">
               <h3 className="text-lg font-bold text-gray-900 mb-2">Description</h3>
@@ -79,6 +90,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             
             <button 
               disabled={isOutOfStock}
+              onClick={() => addToCart(product)}
               className={`w-full font-bold text-lg py-4 rounded-xl transition-all shadow-lg 
                 ${isOutOfStock 
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed shadow-none" 
