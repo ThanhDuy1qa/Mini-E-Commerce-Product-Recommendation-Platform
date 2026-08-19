@@ -41,14 +41,19 @@ export default function LoginPage() {
         // 3. Hiển thị thông báo
         setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // 4. Chuyển hướng trang sau 1.5 giây (Role 1 -> Admin, Role 0 -> Trang chủ)
+        // PHÁT TÍN HIỆU: Báo cho Navbar biết là có người vừa đăng nhập
+        window.dispatchEvent(new Event("userLogin"));
+
+        // 4. Chuyển hướng trang sau 1.5 giây
         setTimeout(() => {
           if (data.user.role === 1) {
-            router.push("/admin/dashboard");
+            // SỬA Ở ĐÂY: Dùng window.location.href thay vì router.push để trình duyệt tự F5
+            window.location.href = "/admin/dashboard";
           } else {
-            router.push("/");
+            // SỬA Ở ĐÂY: Chuyển về trang chủ và tự load lại UI
+            window.location.href = "/";
           }
-        }, 1500);
+        }, 20);
       } else {
         setMessage(data.message || "Login failed!");
       }
