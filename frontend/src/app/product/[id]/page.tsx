@@ -1,10 +1,38 @@
-import Link from "next/link";
-import { mockProducts } from "../../page";
+"use client";
 
-export default async function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = await params;
-  // Sửa thành product.asin
-  const product = mockProducts.find((p) => p.asin === resolvedParams.id);
+import { useEffect, useState, use } from "react";
+import Link from "next/link";
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  image: string;
+  description: string;
+  stock: number;
+}
+
+export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/api/products/${resolvedParams.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setProduct(data.product);
+        }
+      })
+      .catch((err) => console.error("Error fetching product detail:", err))
+      .finally(() => setIsLoading(false));
+  }, [resolvedParams.id]);
+
+  if (isLoading) {
+    return <div className="text-center py-20 text-gray-500">Loading product detail...</div>;
+  }
 
   if (!product) {
     return (
@@ -27,15 +55,15 @@ export default async function ProductDetail({ params }: { params: Promise<{ id: 
         <div className="md:flex">
           <div className="md:w-1/2">
             <img 
-              src={product.image_url} 
-              alt={product.title} 
+              src={product.image} 
+              alt={product.name} 
               className="w-full h-[400px] md:h-[500px] object-cover"
             />
           </div>
           
           <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-            <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">{product.main_cat}</span>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2 mb-4">{product.title}</h1>
+            <span className="text-sm font-bold text-blue-500 uppercase tracking-widest">{product.category}</span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2 mb-4">{product.name}</h1>
             <p className="text-3xl font-bold text-red-600 mb-6">${product.price.toFixed(2)}</p>
             
             <div className="border-t border-b border-gray-200 py-6 mb-8">

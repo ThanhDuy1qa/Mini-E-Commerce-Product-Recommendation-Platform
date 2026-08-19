@@ -5,23 +5,18 @@ const {
   getProductDetail,
   createProduct,
   updateProduct,
-  deleteProduct,
-  getProductsBySeller,
-  getTopProductsBySeller
-} = require('../controller/productController'); //[cite: 5]
+  deleteProduct
+} = require('../controller/productController');
 
-// Import Authentication & Authorization Middleware
-const { verifySeller } = require('../middleware/authMiddleware'); //[cite: 5]
+const { verifyAdmin } = require('../middleware/authMiddleware');
 
 // Public routes
-router.get('/', getProducts); //[cite: 5]
-router.get('/seller/:sellerId', getProductsBySeller); //[cite: 5]
-router.get('/seller/:sellerId/top', getTopProductsBySeller); //[cite: 5]
-router.get('/:id', getProductDetail); //[cite: 5]
+router.get('/', getProducts);
+router.get('/:id', getProductDetail);
 
-// Protected routes (Requires Login & Seller / Admin role)
-router.post('/', verifySeller, createProduct); //[cite: 5]
-router.put('/:id', verifySeller, updateProduct); //[cite: 5]
-router.delete('/:id', verifySeller, deleteProduct); //[cite: 5]
+// Protected routes (Chỉ Admin mới có quyền thao tác)
+router.post('/', verifyAdmin, createProduct);
+router.put('/:id', verifyAdmin, updateProduct);
+router.delete('/:id', verifyAdmin, deleteProduct);
 
-module.exports = router; //[cite: 5]
+module.exports = router;
