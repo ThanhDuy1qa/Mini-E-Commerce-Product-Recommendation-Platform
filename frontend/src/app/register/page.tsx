@@ -1,4 +1,4 @@
-"use client"; // Required in Next.js App Router for state management
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,8 +6,7 @@ import Link from "next/link";
 
 export default function Register() {
   const router = useRouter();
-  
-  // State management for registration form
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,7 +14,6 @@ export default function Register() {
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle registration logic upon form submission
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -23,7 +21,6 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      // Connect to the backend register API endpoint[cite: 1]
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: {
@@ -35,15 +32,12 @@ export default function Register() {
       const data = await response.json();
 
       if (data.success) {
-        // Registration successful[cite: 1]
         setSuccessMsg("Account created successfully! Redirecting to login...");
-        
-        // Redirect to login page after 2 seconds
+
         setTimeout(() => {
           router.push("/login");
-        }, 2000);
+        }, 1500);
       } else {
-        // Registration failed (e.g., email already exists)
         setError(data.message || "Registration failed. Please try again.");
       }
     } catch (err) {
@@ -54,70 +48,89 @@ export default function Register() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-xl">
-        <h2 className="text-2xl font-bold text-center text-gray-900">Create a New Account</h2>
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-10">
         
-        {/* Display error message if it exists */}
+        {/* Header Form */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl mb-3 font-black text-xl">
+            ✨
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Create an Account</h2>
+          <p className="text-sm text-gray-500 mt-1">Join MiniShop to start shopping today</p>
+        </div>
+
+        {/* Thông báo Lỗi */}
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-100 rounded-lg">
-            {error}
+          <div className="mb-6 p-4 rounded-2xl text-sm font-semibold bg-red-50 text-red-700 border border-red-200 flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Display success message if registration is successful */}
+        {/* Thông báo Thành công */}
         {successMsg && (
-          <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg">
-            {successMsg}
+          <div className="mb-6 p-4 rounded-2xl text-sm font-semibold bg-green-50 text-green-700 border border-green-200 flex items-center gap-2">
+            <span>✅</span>
+            <span>{successMsg}</span>
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleRegister}>
+        {/* Form Đăng ký */}
+        <form className="space-y-5" onSubmit={handleRegister}>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
             <input 
               type="text" 
               required 
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition duration-200" 
               placeholder="e.g. John Doe" 
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
             <input 
               type="email" 
               required 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
-              placeholder="Enter your email" 
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition duration-200" 
+              placeholder="name@example.com" 
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
             <input 
               type="password" 
               required 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition duration-200" 
               placeholder="Create a password (min 6 chars)" 
             />
           </div>
+
           <button 
             type="submit" 
             disabled={isLoading}
-            className="w-full px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 font-semibold disabled:bg-green-400"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center disabled:opacity-50 mt-2 cursor-pointer"
           >
-            {isLoading ? "Registering..." : "Register Now"}
+            {isLoading ? "Creating Account..." : "Register Now"}
           </button>
         </form>
         
-        <p className="text-sm text-center text-gray-600">
-          Already have an account? <Link href="/login" className="text-blue-600 hover:underline">Login here</Link>
-        </p>
+        {/* Link chuyển hướng Login */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-600 font-bold hover:underline">
+            Login here
+          </Link>
+        </div>
+
       </div>
     </div>
   );

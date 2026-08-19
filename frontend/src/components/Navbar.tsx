@@ -1,4 +1,5 @@
-'use client'; // Bắt buộc phải có để xài các Hook như useCart, useState
+'use client';
+
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState, useEffect } from "react";
@@ -70,12 +71,12 @@ export default function Navbar() {
             </Link>
 
             <Link href="/orders" className="hover:text-blue-600 transition flex items-center gap-1">
-               My Orders
+              My Orders
             </Link>
 
             <Link href="/cart" className="relative hover:text-blue-600 transition flex items-center gap-1">
               🛒 Cart
-              {/* Cục badge đỏ báo số lượng sản phẩm */}
+              {/* Badge đỏ báo số lượng sản phẩm */}
               {totalItems > 0 && (
                 <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-1 animate-bounce">
                   {totalItems}
@@ -83,15 +84,19 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* KHU VỰC TÀI KHOẢN (Tự thay đổi dựa vào việc đã Login hay chưa) */}
+            {/* KHU VỰC TÀI KHOẢN */}
             {user ? (
               <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
-                <span className="text-sm font-bold text-gray-800">
-                  👋 {user.name || user.email || "User"}
-                </span>
+                <Link 
+                  href="/profile" 
+                  className="text-sm font-bold text-gray-800 hover:text-blue-600 transition flex items-center gap-1 cursor-pointer"
+                  title="Xem thông tin cá nhân"
+                >
+                  👤 {user.name || user.email || "User"}
+                </Link>
                 <button
                   onClick={handleLogout}
-                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold"
+                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold cursor-pointer"
                 >
                   Logout
                 </button>
