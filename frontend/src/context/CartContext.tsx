@@ -13,6 +13,7 @@ interface CartContextType {
   cart: CartItem[];
   addToCart: (product: any) => void;
   removeFromCart: (asin: string) => void;
+  updateQuantity: (asin: string, delta: number) => void; // Bổ sung hàm mới
 }
 
 // 1. Tạo Context
@@ -20,6 +21,7 @@ export const CartContext = createContext<CartContextType>({
   cart: [],
   addToCart: () => {},
   removeFromCart: () => {},
+  updateQuantity: () => {},
 });
 
 // 2. Tạo Provider
@@ -72,18 +74,32 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setCart((prev) => (Array.isArray(prev) ? prev : []).filter((item) => item.asin !== asin));
   };
 
+  // HÀM MỚI: Xử lý tăng giảm số lượng
+  const updateQuantity = (asin: string, delta: number) => {
+    setCart((prev) => {
+      return (Array.isArray(prev) ? prev : []).map(item => {
+        if (item.asin === asin) {
+          // Math.max để đảm bảo số lượng không bao giờ tụt xuống dưới 1
+          const newQuantity = Math.max(1, (item.quantity || 1) + delta);
+          return { ...item, quantity: newQuantity };
+        }
+        return item;
+      });
+    });
+  };
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity }}>
       {children}
     </CartContext.Provider>
   );
 };
 
-// 3. Export hàm useCart cực kỳ rõ ràng để Webpack không bị nhầm
+// 3. Export hàm useCart
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    return { cart: [], addToCart: () => {}, removeFromCart: () => {} };
+    return { cart: [], addToCart: () => {}, removeFromCart: () => {}, updateQuantity: () => {} };
   }
   return context;
 };

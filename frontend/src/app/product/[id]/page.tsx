@@ -66,9 +66,31 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             >
               {isOutOfStock ? "🚫 Out of Stock" : "🛒 Add to Cart"}
             </button>
+            
           </div>
         </div>
       </div>
+
+      {/* KHU VỰC RECOMMENDATION UI CHÈN THÊM VÀO DƯỚI CÙNG CỦA PRODUCT DETAIL */}
+      <div className="mt-16 border-t border-gray-300 pt-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {/* Lấy tạm 4 sản phẩm đầu tiên làm gợi ý */}
+          {mockProducts.slice(0, 4).map((recProduct) => (
+            <div key={recProduct.asin} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+              <img src={recProduct.image_url} alt={recProduct.title} className="w-full h-40 object-cover" />
+              <div className="p-4">
+                <h3 className="text-sm font-bold text-gray-900 truncate">{recProduct.title}</h3>
+                <p className="text-red-600 font-bold mt-1">${recProduct.price.toFixed(2)}</p>
+                <Link href={`/product/${recProduct.asin}`} className="mt-3 block text-center bg-blue-50 text-blue-600 text-sm font-bold py-2 rounded-lg hover:bg-blue-600 hover:text-white transition-colors">
+                  View
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
     </div>
   );
 }

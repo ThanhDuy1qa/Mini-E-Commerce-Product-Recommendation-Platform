@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import { CartProvider } from "@/context/CartContext"; // BƯỚC 1: Import CartProvider
+
+// Đổi từ @/ thành ../ (lùi ra 1 cấp thư mục để vào components và context)
+import Navbar from "../components/Navbar";
+import { CartProvider } from "../context/CartContext";
 
 export const metadata: Metadata = {
-  title: "Mini E-Commerce",
-  description: "Dự án MVP E-Commerce",
+  title: "MiniShop E-Commerce",
+  description: "Dự án MVP E-Commerce siêu mượt",
 };
 
 export default function RootLayout({
@@ -14,9 +16,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
-      <body className="bg-slate-300 text-gray-900 antialiased">
-        {/* BƯỚC 2: Bọc CartProvider ra ngoài Navbar và main */}
+    <html lang="en">
+      <body className="bg-blue-200 text-gray-900 antialiased">
         <CartProvider>
           <Navbar />
           <main className="min-h-screen">
