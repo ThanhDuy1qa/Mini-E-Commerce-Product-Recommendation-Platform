@@ -10,11 +10,10 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Danh sách ánh xạ mã Role sang tên hiển thị
+  // Ánh xạ mã Role: 0 - Customer, 1 - Admin
   const roleMap: Record<number, string> = {
-    0: "Khách hàng (Customer)",
-    1: "Người bán (Seller)",
-    2: "Quản trị viên (Admin)",
+    0: "Customer",
+    1: "Admin",
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -37,26 +36,24 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
 
         // 2. Lấy tên Role từ roleMap
-        const userRoleName = roleMap[data.user.role] || "Không xác định";
+        const userRoleName = roleMap[data.user.role] || "Unknown";
 
-        // 3. Hiển thị thông báo chứa Role
-        setMessage(`Đăng nhập thành công! Vai trò của bạn: ${userRoleName}`);
+        // 3. Hiển thị thông báo
+        setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // 4. Chuyển hướng trang sau 1.5 giây
+        // 4. Chuyển hướng trang sau 1.5 giây (Role 1 -> Admin, Role 0 -> Trang chủ)
         setTimeout(() => {
-          if (data.user.role === 2) {
+          if (data.user.role === 1) {
             router.push("/admin/dashboard");
-          } else if (data.user.role === 1) {
-            router.push("/seller/dashboard");
           } else {
             router.push("/");
           }
         }, 1500);
       } else {
-        setMessage(data.message || "Đăng nhập thất bại!");
+        setMessage(data.message || "Login failed!");
       }
     } catch (err) {
-      setMessage("Không thể kết nối đến máy chủ.");
+      setMessage("Cannot connect to server.");
     } finally {
       setIsLoading(false);
     }
@@ -65,10 +62,14 @@ export default function LoginPage() {
   return (
     <div className="flex justify-center items-center min-h-screen">
       <form onSubmit={handleLogin} className="p-6 bg-white rounded-lg shadow-md w-96 space-y-4">
-        <h2 className="text-xl font-bold text-center">Đăng nhập</h2>
+        <h2 className="text-xl font-bold text-center">Login</h2>
         
         {message && (
-          <div className="p-3 text-sm rounded bg-blue-100 text-blue-800 border border-blue-300">
+          <div className={`p-3 text-sm rounded border ${
+            message.includes("successful") 
+              ? "bg-green-100 text-green-800 border-green-300" 
+              : "bg-red-100 text-red-800 border-red-300"
+          }`}>
             {message}
           </div>
         )}
@@ -83,7 +84,7 @@ export default function LoginPage() {
         />
         <input
           type="password"
-          placeholder="Mật khẩu"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -92,9 +93,9 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {isLoading ? "Đang xử lý..." : "Đăng nhập"}
+          {isLoading ? "Processing..." : "Login"}
         </button>
       </form>
     </div>
