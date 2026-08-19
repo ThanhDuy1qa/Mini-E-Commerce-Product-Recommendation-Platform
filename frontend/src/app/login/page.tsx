@@ -1,43 +1,108 @@
-import Link from "next/link";
+"use client";
 
-export default function Login() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Ánh xạ mã Role: 0 - Customer, 1 - Admin
+  const roleMap: Record<number, string> = {
+    0: "Customer",
+    1: "Admin",
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 1. Lưu Token và thông tin User vào localStorage
+        localStorage.setItem("token", data.accessToken);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // 2. Lấy tên Role từ roleMap
+        const userRoleName = roleMap[data.user.role] || "Unknown";
+
+        // 3. Hiển thị thông báo
+        setMessage(`Login successful! Role: ${userRoleName}`);
+
+        // PHÁT TÍN HIỆU: Báo cho Navbar biết là có người vừa đăng nhập
+        window.dispatchEvent(new Event("userLogin"));
+
+        // 4. Chuyển hướng trang sau 1.5 giây
+        setTimeout(() => {
+          if (data.user.role === 1) {
+            // SỬA Ở ĐÂY: Dùng window.location.href thay vì router.push để trình duyệt tự F5
+            window.location.href = "/admin/dashboard";
+          } else {
+            // SỬA Ở ĐÂY: Chuyển về trang chủ và tự load lại UI
+            window.location.href = "/";
+          }
+        }, 20);
+      } else {
+        setMessage(data.message || "Login failed!");
+      }
+    } catch (err) {
+      setMessage("Cannot connect to server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex justify-center items-center min-h-[80vh] px-4">
-      <div className="w-full max-w-sm bg-white p-6 rounded-2xl shadow-xl space-y-4">
-        <h1 className="text-3xl font-extrabold text-center text-gray-900">Login</h1>
-        <p className="text-center text-gray-500 mb-6">Welcome back to MiniShop!</p>
+    <div className="flex justify-center items-center min-h-screen">
+      <form onSubmit={handleLogin} className="p-6 bg-white rounded-lg shadow-md w-96 space-y-4">
+        <h2 className="text-xl font-bold text-center">Login</h2>
         
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input 
-              type="email" 
-              placeholder="you@example.com" 
-              required 
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            />
+        {message && (
+          <div className={`p-3 text-sm rounded border ${
+            message.includes("successful") 
+              ? "bg-green-100 text-green-800 border-green-300" 
+              : "bg-red-100 text-red-800 border-red-300"
+          }`}>
+            {message}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              required 
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" 
-            />
-          </div>
-          <button 
-            type="submit" 
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 mt-4"
-          >
-            Sign In
-          </button>
-        </form>
-        
-        <p className="text-sm text-center text-gray-600 pt-4 border-t border-gray-100">
-          Don't have an account? <Link href="/register" className="text-blue-600 font-semibold hover:underline">Register</Link>
-        </p>
-      </div>
+        )}
+
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full p-2 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full p-2 border rounded"
+        />
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
+        >
+          {isLoading ? "Processing..." : "Login"}
+        </button>
+      </form>
     </div>
   );
 }
