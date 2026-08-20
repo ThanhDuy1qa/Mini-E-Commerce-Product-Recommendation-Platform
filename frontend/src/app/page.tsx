@@ -17,26 +17,53 @@ interface Product {
   stock?: number;
 }
 
+interface Category {
+  _id?: string;
+  name: string;
+  image_url?: string;
+}
+
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(["All"]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const categories = ["All", "Fashion", "Footwear", "Accessories", "Electronics", "Home & Living"];
+useEffect(() => {
+  // 1. Gọi API lấy danh sách sản phẩm từ Backend
+  fetch("http://localhost:5000/api/products")
+    .then((res) => {
+      if (!res.ok) throw new Error(`Products API error status: ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      if (data?.success) {
+        setProducts(data.products || []);
+      }
+    })
+    .catch((err) => console.error("Error fetching products:", err))
+    .finally(() => setIsLoading(false));
 
-  // Gọi API lấy dữ liệu thực tế từ Backend
-  useEffect(() => {
-    fetch("http://localhost:5000/api/products")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setProducts(data.products || []);
-        }
-      })
-      .catch((err) => console.error("Error fetching products:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  // 2. Gọi API lấy danh sách Category động từ Backend
+  fetch("http://localhost:5000/api/categories")
+    .then((res) => {
+      if (!res.ok) throw new Error(`Categories API error status: ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      if (data?.success && Array.isArray(data.categories)) {
+        const fetchedNames = data.categories.map((cat: Category) => cat.name);
+        setCategories(["All", ...fetchedNames]);
+      } else if (Array.isArray(data)) {
+        const fetchedNames = data.map((cat: Category | string) =>
+          typeof cat === "string" ? cat : cat.name
+        );
+        setCategories(["All", ...fetchedNames]);
+      }
+    })
+    .catch((err) => console.error("Error fetching categories:", err));
+}, []);
 
   // Lọc sản phẩm theo tìm kiếm và danh mục
   const filteredProducts = products.filter((product) => {
@@ -66,7 +93,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Bộ lọc Danh mục */}
+      {/* Bộ lọc Danh mục động từ Backend */}
       <div className="flex flex-wrap gap-2 justify-center mb-8">
         {categories.map((cat) => (
           <button
