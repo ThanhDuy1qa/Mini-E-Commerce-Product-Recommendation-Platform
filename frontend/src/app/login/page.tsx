@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { fetchCart } = useCart();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -35,25 +37,26 @@ export default function LoginPage() {
         localStorage.setItem("token", data.accessToken);
         localStorage.setItem("user", JSON.stringify(data.user));
 
-        // 2. Lấy tên Role từ roleMap
+        // 2. Tải giỏ hàng chuẩn từ DB của User vừa đăng nhập
+        await fetchCart();
+
+        // 3. Lấy tên Role từ roleMap
         const userRoleName = roleMap[data.user.role] || "Unknown";
 
-        // 3. Hiển thị thông báo
+        // 4. Hiển thị thông báo
         setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // PHÁT TÍN HIỆU: Báo cho Navbar biết là có người vừa đăng nhập
+        // PHÁT TÍN HIỆU: Báo cho Navbar biết người dùng vừa đăng nhập
         window.dispatchEvent(new Event("userLogin"));
 
-        // 4. Chuyển hướng trang sau 1.5 giây
+        // 5. Chuyển hướng trang
         setTimeout(() => {
           if (data.user.role === 1) {
-            // SỬA Ở ĐÂY: Dùng window.location.href thay vì router.push để trình duyệt tự F5
             window.location.href = "/admin/dashboard";
           } else {
-            // SỬA Ở ĐÂY: Chuyển về trang chủ và tự load lại UI
             window.location.href = "/";
           }
-        }, 20);
+        }, 500);
       } else {
         setMessage(data.message || "Login failed!");
       }

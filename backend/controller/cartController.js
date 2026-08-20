@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-const Interaction = require('../models/Interaction'); // Thêm Interaction model
+const Interaction = require('../models/Interaction'); // Added Interaction model
 const { logInteraction } = require('../utils/interactionHelper');
+
 // Calculate cart total
 const calculateTotal = (cart) => {
   return cart.items.reduce((total, item) => {
@@ -47,18 +48,18 @@ const getCart = async (req, res) => {
 };
 
 // POST /api/cart/items
-// Add product to cart & Ghi nhận hành vi add_to_cart
+// Add product to cart & log add_to_cart interaction
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
     const userId = req.user.id;
 
     if (!mongoose.isValidObjectId(productId)) {
-      return res.status(400).json({ success: false, message: 'Product ID không hợp lệ.' });
+      return res.status(400).json({ success: false, message: 'Invalid product ID.' });
     }
 
     const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm.' });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
 
     let cart = await Cart.findOne({ user: userId }) || new Cart({ user: userId, items: [] });
     const existingItem = cart.items.find((item) => item.product.toString() === productId);
@@ -71,18 +72,18 @@ const addToCart = async (req, res) => {
 
     await cart.save();
 
-    // GHI NHẬN HÀNH VI ADD_TO_CART
+    // LOG INTERACTION: ADD_TO_CART
     logInteraction(userId, product._id, 'add_to_cart');
 
     await cart.populate('items.product');
     res.status(200).json({
       success: true,
-      message: 'Thêm vào giỏ thành công.',
+      message: 'Item added to cart successfully.',
       cart,
       total: calculateTotal(cart)
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Lỗi thêm vào giỏ.', error: error.message });
+    res.status(500).json({ success: false, message: 'Failed to add item to cart.', error: error.message });
   }
 };
 
