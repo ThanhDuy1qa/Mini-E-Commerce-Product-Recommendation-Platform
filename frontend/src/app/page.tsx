@@ -25,40 +25,46 @@ interface Category {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [recommendations, setRecommendations] = useState<Product[]>([]); // BỔ SUNG STATE GỢI Ý
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-useEffect(() => {
-  // 1. Gọi API lấy danh sách sản phẩm từ Backend
-  fetch("http://localhost:5000/api/products")
-    .then((res) => {
-      if (!res.ok) throw new Error(`Products API error status: ${res.status}`);
-      return res.json();
-    })
+  useEffect(() => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+  // Cấu hình header linh hoạt
+  const headers: HeadersInit = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // 1. Gọi API Gợi Ý (Chạy cho cả khách chưa đăng nhập lẫn người dùng đã đăng nhập)
+  fetch("http://localhost:5000/api/recommendations", { headers })
+    .then((res) => res.json())
     .then((data) => {
-      if (data?.success) {
-        setProducts(data.products || []);
+      if (data?.success && Array.isArray(data.data)) {
+        setRecommendations(data.data.slice(0, 5));
       }
+    })
+    .catch((err) => console.error("Error fetching recommendations:", err));
+
+  // 2. Gọi API lấy tất cả sản phẩm
+  fetch("http://localhost:5000/api/products")
+    .then((res) => res.json())
+    .then((data) => {
+      if (data?.success) setProducts(data.products || []);
     })
     .catch((err) => console.error("Error fetching products:", err))
     .finally(() => setIsLoading(false));
 
-  // 2. Gọi API lấy danh sách Category động từ Backend
+  // 3. Gọi API lấy danh mục
   fetch("http://localhost:5000/api/categories")
-    .then((res) => {
-      if (!res.ok) throw new Error(`Categories API error status: ${res.status}`);
-      return res.json();
-    })
+    .then((res) => res.json())
     .then((data) => {
       if (data?.success && Array.isArray(data.categories)) {
         const fetchedNames = data.categories.map((cat: Category) => cat.name);
-        setCategories(["All", ...fetchedNames]);
-      } else if (Array.isArray(data)) {
-        const fetchedNames = data.map((cat: Category | string) =>
-          typeof cat === "string" ? cat : cat.name
-        );
         setCategories(["All", ...fetchedNames]);
       }
     })
@@ -93,6 +99,54 @@ useEffect(() => {
         </div>
       </div>
 
+      {/* KHỐI HIỂN THỊ Top 5 Sản phẩm Gợi ý (Chỉ hiện khi có dữ liệu) */}
+      {recommendations.length > 0 && (
+        <div className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              ✨ Recommended For You
+            </h2>
+            <span className="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full">
+              Top 5 Personal Picks
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {recommendations.map((product) => {
+              const id = product._id || product.asin;
+              const name = product.name || product.title;
+              const image = product.image || product.image_url;
+              const category = product.category || product.main_cat;
+
+              return (
+                <div 
+                  key={`rec-${id}`} 
+                  className="bg-white rounded-xl shadow-md border-2 border-blue-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between"
+                >
+                  <div>
+                    <img src={image} alt={name} className="w-full h-44 object-cover" />
+                    <div className="p-4">
+                      <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded uppercase tracking-wider">{category}</span>
+                      <h3 className="text-sm font-bold text-gray-900 mt-2 truncate" title={name}>{name}</h3>
+                      <p className="text-red-600 font-bold mt-1 text-lg">${product.price?.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 pt-0">
+                    <Link 
+                      href={`/product/${id}`} 
+                      className="block w-full text-center bg-blue-600 text-white font-semibold text-sm py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Bộ lọc Danh mục động từ Backend */}
       <div className="flex flex-wrap gap-2 justify-center mb-8">
         {categories.map((cat) => (
@@ -110,7 +164,7 @@ useEffect(() => {
         ))}
       </div>
 
-      {/* Header Danh sách sản phẩm */}
+      {/* Header Danh sách tất cả sản phẩm */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
         <span className="text-sm text-gray-500">Showing {filteredProducts.length} results</span>

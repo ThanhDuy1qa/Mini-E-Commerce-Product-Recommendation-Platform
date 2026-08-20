@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-
+const Interaction = require('../models/Interaction'); // Thêm Interaction model
+const { logInteraction } = require('../utils/interactionHelper');
 // Calculate cart total
 const calculateTotal = (cart) => {
   return cart.items.reduce((total, item) => {
@@ -12,7 +13,6 @@ const calculateTotal = (cart) => {
 };
 
 // GET /api/cart
-// Get current user's cart
 const getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({
@@ -47,106 +47,46 @@ const getCart = async (req, res) => {
 };
 
 // POST /api/cart/items
-// Add product to cart
+// Add product to cart & Ghi nhận hành vi add_to_cart
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
-
-    if (!productId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product ID is required.'
-      });
-    }
+    const userId = req.user.id;
 
     if (!mongoose.isValidObjectId(productId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid product ID.'
-      });
-    }
-
-    const parsedQuantity = Number(quantity);
-
-    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity must be a positive integer.'
-      });
+      return res.status(400).json({ success: false, message: 'Product ID không hợp lệ.' });
     }
 
     const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm.' });
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found.'
-      });
-    }
-
-    if (product.stock < parsedQuantity) {
-      return res.status(400).json({
-        success: false,
-        message: 'Insufficient product stock.'
-      });
-    }
-
-    let cart = await Cart.findOne({
-      user: req.user.id
-    });
-
-    if (!cart) {
-      cart = new Cart({
-        user: req.user.id,
-        items: []
-      });
-    }
-
-    const existingItem = cart.items.find(
-      (item) => item.product.toString() === productId
-    );
+    let cart = await Cart.findOne({ user: userId }) || new Cart({ user: userId, items: [] });
+    const existingItem = cart.items.find((item) => item.product.toString() === productId);
 
     if (existingItem) {
-      const newQuantity = existingItem.quantity + parsedQuantity;
-
-      if (newQuantity > product.stock) {
-        return res.status(400).json({
-          success: false,
-          message: 'Requested quantity exceeds available stock.'
-        });
-      }
-
-      existingItem.quantity = newQuantity;
+      existingItem.quantity += Number(quantity);
     } else {
-      cart.items.push({
-        product: productId,
-        quantity: parsedQuantity
-      });
+      cart.items.push({ product: productId, quantity: Number(quantity) });
     }
 
     await cart.save();
 
+    // GHI NHẬN HÀNH VI ADD_TO_CART
+    logInteraction(userId, product._id, 'add_to_cart');
+
     await cart.populate('items.product');
-
-    const total = calculateTotal(cart);
-
     res.status(200).json({
       success: true,
-      message: 'Product added to cart successfully.',
+      message: 'Thêm vào giỏ thành công.',
       cart,
-      total
+      total: calculateTotal(cart)
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add product to cart.',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Lỗi thêm vào giỏ.', error: error.message });
   }
 };
 
 // PUT /api/cart/items/:productId
-// Change product quantity
 const updateCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -230,7 +170,6 @@ const updateCartItem = async (req, res) => {
 };
 
 // DELETE /api/cart/items/:productId
-// Remove product from cart
 const removeCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
