@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from "react";
 import Link from "next/link";
 
@@ -39,6 +40,18 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const categories = ["All", "Fashion", "Footwear", "Accessories", "Electronics", "Home & Living"];
+  const mockRecommendations = mockProducts.slice(12, 16);
+
+  const trackInteraction = (eventType, productId) => {
+    console.log(`[EVENT TRACKING] Sent '${eventType}' for Product ID: ${productId}`);
+  };
+
+  const handleAddToCart = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    trackInteraction('add_to_cart', product.asin);
+    alert(`Added "${product.title}" to cart!`);
+  };
 
   const filteredProducts = mockProducts.filter((product) => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -47,69 +60,145 @@ export default function Home() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="bg-blue-600 rounded-2xl p-8 mb-8 text-white text-center shadow-lg">
-        <h1 className="text-3xl md:text-5xl font-bold mb-4">Welcome to MiniShop</h1>
-        <p className="text-blue-100 text-lg mb-6">Discover products recommended just for you!</p>
-        
-        <div className="max-w-md mx-auto">
-          <input 
-            type="text" 
-            placeholder="Search products..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-md"
-          />
-        </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+      {/* Banner Hero */}
+      <div className="bg-blue-600 rounded-2xl p-8 md:p-12 text-white text-center shadow-md">
+        <h1 className="text-3xl md:text-5xl font-bold mb-3">Welcome to MiniShop</h1>
+        <p className="text-blue-100 text-base md:text-lg">Discover products recommended just for you!</p>
       </div>
 
-      <div className="flex flex-wrap gap-2 justify-center mb-8">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-xl font-semibold transition ${
-              selectedCategory === cat 
-                ? "bg-blue-600 text-white shadow-md" 
-                : "bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
-        <span className="text-sm text-gray-500">Showing {filteredProducts.length} results</span>
-      </div>
-      
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-          <p className="text-gray-500 text-lg">No products found matching your request.</p>
+      {/* RECOMMENDED FOR YOU */}
+      <section className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            Recommended For You ✨
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Based on your browsing history</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <div key={product.asin} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col justify-between">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+          {mockRecommendations.map((product) => (
+            <Link 
+              key={product.asin}
+              href={`/product/${product.asin}`}
+              onClick={() => trackInteraction('view_product', product.asin)}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between group cursor-pointer"
+            >
               <div>
-                <img src={product.image_url} alt={product.title} className="w-full h-56 object-cover" />
-                <div className="p-5">
-                  <span className="text-xs text-blue-500 font-bold uppercase tracking-wider">{product.main_cat}</span>
-                  <h3 className="text-lg font-bold text-gray-900 mt-1 truncate">{product.title}</h3>
-                  <p className="text-red-600 font-bold mt-2 text-xl">${product.price.toFixed(2)}</p>
+                <div className="overflow-hidden">
+                  <img 
+                    src={product.image_url} 
+                    alt={product.title} 
+                    className="w-full h-48 object-cover bg-gray-50 group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <div className="p-4">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md inline-block">
+                    {product.main_cat}
+                  </span>
+                  <h3 className="font-bold text-gray-900 text-base mt-2 truncate group-hover:text-blue-600 transition-colors">{product.title}</h3>
+                  <p className="text-red-600 font-extrabold text-xl mt-1">${product.price.toFixed(2)}</p>
                 </div>
               </div>
+
               
-              <div className="p-5 pt-0">
-                <Link href={`/product/${product.asin}`} className="block w-full text-center bg-gray-100 text-gray-800 font-semibold py-2 rounded-lg hover:bg-blue-600 hover:text-white transition-colors duration-200">
-                  View Details
-                </Link>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
-      )}
+      </section>
+
+      {/* FEATURED PRODUCTS */}
+      <section className="space-y-6">
+        {/* Header + Search Bar + Category Filters */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Showing {filteredProducts.length} results</p>
+            </div>
+
+            {/* Ô Search Tương Tác Cao (Nổi bật rõ ràng) */}
+            <div className="w-full md:w-80 relative">
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-2.5 bg-white border-2 border-gray-300 rounded-xl text-gray-900 text-sm font-semibold placeholder-gray-500 shadow-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition duration-200"
+              />
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-base">🔍</span>
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800 text-xs font-bold bg-gray-200 hover:bg-gray-300 rounded-full w-5 h-5 flex items-center justify-center transition"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Categories */}
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-xl font-semibold transition text-sm ${
+                  selectedCategory === cat 
+                    ? "bg-blue-600 text-white shadow-sm" 
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Products Grid */}
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-2">
+            <p className="text-gray-500 text-base font-semibold">No products found matching "{searchTerm}"</p>
+            <button 
+              onClick={() => { setSearchTerm(""); setSelectedCategory("All"); }}
+              className="text-sm text-blue-600 font-bold hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <Link 
+                key={product.asin}
+                href={`/product/${product.asin}`}
+                onClick={() => trackInteraction('view_product', product.asin)}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between group cursor-pointer"
+              >
+                <div>
+                  <div className="overflow-hidden">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.title} 
+                      className="w-full h-48 object-cover bg-gray-50 group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md inline-block">
+                      {product.main_cat}
+                    </span>
+                    <h3 className="font-bold text-gray-900 text-base mt-2 truncate group-hover:text-blue-600 transition-colors">{product.title}</h3>
+                    <p className="text-red-600 font-extrabold text-xl mt-1">${product.price.toFixed(2)}</p>
+                  </div>
+                </div>
+                
+                
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
