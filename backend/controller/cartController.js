@@ -1,0 +1,236 @@
+const mongoose = require('mongoose');
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+const Interaction = require('../models/Interaction'); // Thêm Interaction model
+const { logInteraction } = require('../utils/interactionHelper');
+// Calculate cart total
+const calculateTotal = (cart) => {
+  return cart.items.reduce((total, item) => {
+    if (!item.product) return total;
+
+    return total + item.product.price * item.quantity;
+  }, 0);
+};
+
+// GET /api/cart
+const getCart = async (req, res) => {
+  try {
+    let cart = await Cart.findOne({
+      user: req.user.id
+    }).populate('items.product');
+
+    if (!cart) {
+      return res.status(200).json({
+        success: true,
+        cart: {
+          user: req.user.id,
+          items: []
+        },
+        total: 0
+      });
+    }
+
+    const total = calculateTotal(cart);
+
+    res.status(200).json({
+      success: true,
+      cart,
+      total
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get cart.',
+      error: error.message
+    });
+  }
+};
+
+// POST /api/cart/items
+// Add product to cart & Ghi nhận hành vi add_to_cart
+const addToCart = async (req, res) => {
+  try {
+    const { productId, quantity = 1 } = req.body;
+    const userId = req.user.id;
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return res.status(400).json({ success: false, message: 'Product ID không hợp lệ.' });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ success: false, message: 'Không tìm thấy sản phẩm.' });
+
+    let cart = await Cart.findOne({ user: userId }) || new Cart({ user: userId, items: [] });
+    const existingItem = cart.items.find((item) => item.product.toString() === productId);
+
+    if (existingItem) {
+      existingItem.quantity += Number(quantity);
+    } else {
+      cart.items.push({ product: productId, quantity: Number(quantity) });
+    }
+
+    await cart.save();
+
+    // GHI NHẬN HÀNH VI ADD_TO_CART
+    logInteraction(userId, product._id, 'add_to_cart');
+
+    await cart.populate('items.product');
+    res.status(200).json({
+      success: true,
+      message: 'Thêm vào giỏ thành công.',
+      cart,
+      total: calculateTotal(cart)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Lỗi thêm vào giỏ.', error: error.message });
+  }
+};
+
+// PUT /api/cart/items/:productId
+const updateCartItem = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { quantity } = req.body;
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID.'
+      });
+    }
+
+    const parsedQuantity = Number(quantity);
+
+    if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be a positive integer.'
+      });
+    }
+
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found.'
+      });
+    }
+
+    if (parsedQuantity > product.stock) {
+      return res.status(400).json({
+        success: false,
+        message: 'Requested quantity exceeds available stock.'
+      });
+    }
+
+    const cart = await Cart.findOne({
+      user: req.user.id
+    });
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found.'
+      });
+    }
+
+    const cartItem = cart.items.find(
+      (item) => item.product.toString() === productId
+    );
+
+    if (!cartItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product is not in the cart.'
+      });
+    }
+
+    cartItem.quantity = parsedQuantity;
+
+    await cart.save();
+
+    await cart.populate('items.product');
+
+    const total = calculateTotal(cart);
+
+    res.status(200).json({
+      success: true,
+      message: 'Cart item updated successfully.',
+      cart,
+      total
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update cart item.',
+      error: error.message
+    });
+  }
+};
+
+// DELETE /api/cart/items/:productId
+const removeCartItem = async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    if (!mongoose.isValidObjectId(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID.'
+      });
+    }
+
+    const cart = await Cart.findOne({
+      user: req.user.id
+    });
+
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found.'
+      });
+    }
+
+    const existingItem = cart.items.find(
+      (item) => item.product.toString() === productId
+    );
+
+    if (!existingItem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product is not in the cart.'
+      });
+    }
+
+    cart.items = cart.items.filter(
+      (item) => item.product.toString() !== productId
+    );
+
+    await cart.save();
+
+    await cart.populate('items.product');
+
+    const total = calculateTotal(cart);
+
+    res.status(200).json({
+      success: true,
+      message: 'Product removed from cart successfully.',
+      cart,
+      total
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove product from cart.',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeCartItem
+};

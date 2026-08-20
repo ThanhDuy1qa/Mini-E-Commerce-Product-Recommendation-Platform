@@ -17,12 +17,21 @@ app.use(express.json());
 // Import & sử dụng Auth Routes
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
+// Cart Routes
+const cartRoutes = require('./routes/cartRoutes');
+app.use('/api/cart', cartRoutes);
+// Order Routes
+const orderRoutes = require('./routes/orderRoutes');
+app.use('/api/orders', orderRoutes);
 
 const productRoutes = require('./routes/productRoutes');
 app.use('/api/products', productRoutes);
 
 const categoryRoutes = require('./routes/categoryRoutes');
 app.use('/api/categories', categoryRoutes);
+
+const recommendationRoutes = require('./routes/recommendationRoutes');
+app.use('/api/recommendations', recommendationRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
