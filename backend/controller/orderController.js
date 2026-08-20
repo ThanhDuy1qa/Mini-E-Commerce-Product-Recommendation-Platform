@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Interaction = require('../models/Interaction');
 
 // POST /api/orders
 // Create an order from the current user's cart
@@ -67,6 +68,8 @@ const createOrder = async (req, res) => {
 
     // Reduce product stock
     for (const item of cart.items) {
+
+      // Trừ stock
       await Product.findByIdAndUpdate(
         item.product._id,
         {
@@ -75,6 +78,15 @@ const createOrder = async (req, res) => {
           }
         }
       );
+
+
+      // Lưu hành vi mua hàng
+      await Interaction.create({
+        userId: req.user.id,
+        productId: item.product._id,
+        type: 'purchase'
+      });
+
     }
 
     // Clear cart after successful checkout
@@ -122,43 +134,140 @@ const getMyOrders = async (req, res) => {
 // GET /api/orders/:id
 // Get one order belonging to the current user
 const getOrderById = async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid order ID.'
-      });
+  try {
+
+    let query = {
+      _id: req.params.id
+    };
+
+
+    // Nếu không phải admin
+    // chỉ xem order của bản thân
+    if (req.user.role !== 1) {
+
+      query.user = req.user.id;
+
     }
 
-    const order = await Order.findOne({
-      _id: id,
-      user: req.user.id
-    }).populate('products.product');
+
+    const order = await Order.findOne(query)
+      .populate('user', 'username name email')
+      .populate('products.product');
+
 
     if (!order) {
+
       return res.status(404).json({
-        success: false,
-        message: 'Order not found.'
+        message: "Order not found"
       });
+
     }
+
+
+    res.json(order);
+
+
+  } catch (error) {
+
+    res.status(500).json({
+      message: error.message
+    });
+
+  }
+
+};
+
+
+// GET ALL ORDERS FOR ADMIN
+const getAllOrders = async (req, res) => {
+  try {
+
+    const orders = await Order.find()
+      .populate('user', 'username name email')
+      .populate('products.product')
+      .sort({ createdAt: -1 });
+
 
     res.status(200).json({
       success: true,
-      order
+      count: orders.length,
+      orders
     });
+
+
   } catch (error) {
+
     res.status(500).json({
       success: false,
-      message: 'Failed to get order.',
-      error: error.message
+      message: error.message
     });
+
   }
+};
+
+
+
+// UPDATE ORDER STATUS FOR ADMIN
+const updateOrderStatus = async (req, res) => {
+
+  try {
+
+    const { status } = req.body;
+
+
+    const allowedStatus = [
+      'Pending',
+      'Confirmed',
+      'Completed',
+      'Cancelled'
+    ];
+
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid order status"
+      });
+    }
+
+
+    const order = await Order.findById(req.params.id);
+
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found"
+      });
+    }
+
+
+    order.status = status;
+
+    await order.save();
+
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated",
+      order
+    });
+
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
 };
 
 module.exports = {
   createOrder,
   getMyOrders,
-  getOrderById
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus
 };
