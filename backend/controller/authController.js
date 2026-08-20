@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Register User (Name, Email, Password)
+// Register User (Name, Email, Password)
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -13,14 +14,16 @@ const register = async (req, res) => {
 
     const formattedEmail = email.toLowerCase().trim();
 
-    // Kiểm tra Email tồn tại
+    // Kiểm tra Email tồn tại thủ công
     const existingUser = await User.findOne({ email: formattedEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email address is already registered.' });
     }
 
-    // Hash mật khẩu bắt buộc
+    // Hash mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Tạo user mới
     const user = await User.create({
       name,
       email: formattedEmail,
@@ -33,10 +36,17 @@ const register = async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
+    // IN LỖI CHI TIẾT RA TERMINAL BẮT LỖI
+    console.error("❌ Register Error Details:", error);
+
+    // Nếu Mongoose báo lỗi trùng E11000 (Duplicate Email)
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Email address is already registered.' });
+    }
+
     res.status(500).json({ success: false, message: 'Registration failed.', error: error.message });
   }
 };
-
 // Login User (Email & Password)
 const login = async (req, res) => {
   try {
