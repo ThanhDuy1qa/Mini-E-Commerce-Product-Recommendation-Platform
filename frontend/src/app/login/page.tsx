@@ -12,9 +12,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Ánh xạ mã Role: 0 - Customer, 1 - Admin
-  const roleMap: Record<number, string> = {
+  const roleMap: Record<number | string, string> = {
     0: "Customer",
     1: "Admin",
+    admin: "Admin",
+    customer: "Customer",
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -31,24 +33,28 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        // 1. Lưu Token và thông tin User vào localStorage
-        localStorage.setItem("token", data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.success || response.ok) {
+        const userObj = data.user || data;
+        const token = data.accessToken || data.token;
 
-        // 2. Lấy tên Role từ roleMap
-        const userRoleName = roleMap[data.user.role] || "Unknown";
+        // 1. Lưu Token và thông tin User vào localStorage
+        if (token) localStorage.setItem("token", token);
+        if (userObj) localStorage.setItem("user", JSON.stringify(userObj));
+
+        // 2. Lấy tên Role
+        const role = userObj?.role;
+        const userRoleName = roleMap[role] || "Customer";
 
         // 3. Hiển thị thông báo
         setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // PHÁT TÍN HIỆU: Báo cho Navbar biết là có người vừa đăng nhập
+        // Phát tín hiệu cho Navbar
         window.dispatchEvent(new Event("userLogin"));
 
-        // 4. Chuyển hướng trang sau khi người dùng kịp đọc thông báo
+        // 4. Chuyển hướng theo đúng Role
         setTimeout(() => {
-          if (data.user.role === 1) {
-            window.location.href = "/admin/dashboard";
+          if (role === 1 || role === "1" || role === "admin") {
+            window.location.href = "/admin/products";
           } else {
             window.location.href = "/";
           }
@@ -76,7 +82,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-500 mt-1">Please enter your credentials to sign in</p>
         </div>
 
-        {/* Thông báo dạng Banner chuẩn UI */}
+        {/* Thông báo Banner */}
         {message && (
           <div className={`mb-6 p-4 rounded-2xl text-sm font-semibold border flex items-center gap-2 ${
             message.includes("successful") 

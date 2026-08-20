@@ -2,7 +2,7 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Register User
+// Register User (Name, Email, Password)
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -11,17 +11,20 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, email, and password.' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const formattedEmail = email.toLowerCase().trim();
+
+    // Kiểm tra Email tồn tại
+    const existingUser = await User.findOne({ email: formattedEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email address is already registered.' });
     }
 
+    // Hash mật khẩu bắt buộc
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      username: email.split('@')[0] + Math.floor(Math.random() * 1000)
+      email: formattedEmail,
+      password: hashedPassword
     });
 
     res.status(201).json({
@@ -34,12 +37,18 @@ const register = async (req, res) => {
   }
 };
 
-// Login User
+// Login User (Email & Password)
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide email and password.' });
+    }
+
+    const formattedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: formattedEmail });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
