@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const { logInteraction } = require('../utils/interactionHelper'); // Imported shared helper
+const { logInteraction } = require('../utils/interactionHelper');
 
 // 1. Get product list (Search, Filter, Pagination)
 const getProducts = async (req, res) => {
@@ -24,7 +24,11 @@ const getProducts = async (req, res) => {
     if (sort === 'price_desc') sortOptions = { price: -1 };
 
     const [products, totalProducts] = await Promise.all([
-      Product.find(query).sort(sortOptions).skip(skip).limit(limit).lean(),
+      Product.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       Product.countDocuments(query)
     ]);
 

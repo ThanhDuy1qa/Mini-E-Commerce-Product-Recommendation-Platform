@@ -26,8 +26,12 @@ export default function CartPage() {
         <div className="flex flex-col lg:flex-row gap-8">
           
           <div className="lg:w-2/3 space-y-4">
-            {cart.map((item) => (
-              <div key={item.asin} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-center gap-6">
+            {/* Thêm tham số index ở .map() */}
+            {cart.map((item, index) => (
+              <div 
+                key={item._id || item.id || item.asin || index} 
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 p-5 flex items-center gap-6"
+              >
                 <img src={item.image_url} alt={item.title} className="w-24 h-24 object-cover rounded-xl border border-gray-100" />
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{item.title}</h3>

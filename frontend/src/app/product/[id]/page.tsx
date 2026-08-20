@@ -26,7 +26,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Lấy token từ localStorage (hoặc điều chỉnh theo nơi bạn lưu token)
+    // 1. Lấy token từ localStorage (nếu người dùng đã đăng nhập)
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     const headers: HeadersInit = {};
@@ -34,7 +34,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // 2. Gửi kèm Header Authorization để Backend nhận diện req.user
+    // 2. Gửi kèm Header Authorization để Backend nhận diện người dùng
     fetch(`http://localhost:5000/api/products/${resolvedParams.id}`, { headers })
       .then((res) => res.json())
       .then((data) => {

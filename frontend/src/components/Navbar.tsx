@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { cart, clearCart, fetchCart } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
   // Kiểm tra trạng thái đăng nhập và cập nhật giỏ hàng
@@ -78,7 +79,7 @@ export default function Navbar() {
             </Link>
 
             <Link href="/orders" className="hover:text-blue-600 transition flex items-center gap-1">
-               My Orders
+              My Orders
             </Link>
 
             <Link href="/cart" className="relative hover:text-blue-600 transition flex items-center gap-1">
@@ -93,12 +94,28 @@ export default function Navbar() {
             {/* USER PROFILE / AUTH BUTTONS */}
             {user ? (
               <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
-                <span className="text-sm font-bold text-gray-800">
-                  👋 {user.name || user.email || "User"}
-                </span>
+                
+                {/* 2. Nút quay lại Admin Panel khi tài khoản admin đang xem trang bán hàng */}
+                {isAdmin && (
+                  <Link
+                    href="/admin/products"
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-700 transition text-sm font-bold flex items-center gap-1 shadow-xs"
+                  >
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+
+                <Link 
+                  href="/profile" 
+                  className="text-sm font-bold text-gray-800 hover:text-blue-600 transition flex items-center gap-1 cursor-pointer"
+                  title="Xem thông tin cá nhân"
+                >
+                  👤 {user.name || user.email || "User"}
+                </Link>
+
                 <button
                   onClick={handleLogout}
-                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold"
+                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold cursor-pointer"
                 >
                   Logout
                 </button>
