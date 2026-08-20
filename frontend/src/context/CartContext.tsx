@@ -49,62 +49,69 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart]);
 
   const addToCart = async (product: any, quantityToAdd: number = 1) => {
-    // 1. Xác định ID chuẩn xác từ product (_id hoặc asin)
-    const productId = product._id || product.asin;
-    if (!productId) return;
+  // 1. Xác định ID chuẩn xác từ product (_id hoặc asin)
+  const productId = product._id || product.asin;
+  if (!productId) return;
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    // 2. Gửi request lên Backend API để lưu DB & Log Interaction (nếu người dùng đã đăng nhập)
-    if (token) {
-      try {
-        await fetch("http://localhost:5000/api/cart/items", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            productId: productId,
-            quantity: quantityToAdd,
-          }),
-        });
-      } catch (err) {
-        console.error("Lỗi kết nối Cart API Backend:", err);
-      }
-    }
-
-    // 3. Cập nhật State cục bộ ở Frontend
-    setCart((prev) => {
-      const currentCart = Array.isArray(prev) ? prev : [];
-      
-      // So sánh theo _id hoặc asin chuẩn xác
-      const existingIndex = currentCart.findIndex((item) => {
-        const itemId = item._id || item.asin;
-        return itemId === productId;
-      });
-
-      if (existingIndex > -1) {
-        const updated = [...currentCart];
-        updated[existingIndex].quantity = (updated[existingIndex].quantity || 1) + quantityToAdd;
-        return updated;
-      }
-
-      return [
-        ...currentCart,
-        {
-          _id: product._id,
-          asin: product.asin || product._id,
-          title: product.title || product.name || "Product",
-          price: Number(product.price || 0),
-          image_url: product.image_url || product.image || "",
-          quantity: quantityToAdd,
+  // 2. Gửi request lên Backend API
+  if (token) {
+    try {
+      await fetch("http://localhost:5000/api/cart/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      ];
+        body: JSON.stringify({
+          productId: productId,
+          quantity: quantityToAdd,
+        }),
+      });
+    } catch (err) {
+      console.error("Lỗi kết nối Cart API Backend:", err);
+    }
+  }
+
+  // 3. Cập nhật State cục bộ ở Frontend (Sử dụng Immutable Update)
+  setCart((prev) => {
+    const currentCart = Array.isArray(prev) ? prev : [];
+    
+    // So sánh theo _id hoặc asin
+    const existingIndex = currentCart.findIndex((item) => {
+      const itemId = item._id || item.asin;
+      return itemId === productId;
     });
 
-    alert("Đã thêm sản phẩm vào giỏ hàng!");
-  };
+    if (existingIndex > -1) {
+      // Tạo mảng mới VÀ object mới (sử dụng .map) để không biến đổi object cũ
+      return currentCart.map((item, index) => {
+        if (index === existingIndex) {
+          return {
+            ...item,
+            quantity: (item.quantity || 1) + quantityToAdd
+          };
+        }
+        return item;
+      });
+    }
+
+    return [
+      ...currentCart,
+      {
+        _id: product._id,
+        asin: product.asin || product._id,
+        title: product.title || product.name || "Product",
+        price: Number(product.price || 0),
+        image_url: product.image_url || product.image || "",
+        quantity: quantityToAdd,
+      },
+    ];
+  });
+
+  alert("Đã thêm sản phẩm vào giỏ hàng!");
+};
 
   const removeFromCart = (id: string) => {
     setCart((prev) =>
