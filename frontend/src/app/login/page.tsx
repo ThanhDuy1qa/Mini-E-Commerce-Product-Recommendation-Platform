@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { fetchCart } = useCart();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -41,24 +43,27 @@ export default function LoginPage() {
         if (token) localStorage.setItem("token", token);
         if (userObj) localStorage.setItem("user", JSON.stringify(userObj));
 
-        // 2. Lấy tên Role
+        // 2. Tải giỏ hàng từ DB của User vừa đăng nhập
+        await fetchCart();
+
+        // 3. Lấy tên Role
         const role = userObj?.role;
         const userRoleName = roleMap[role] || "Customer";
 
-        // 3. Hiển thị thông báo
+        // 4. Hiển thị thông báo
         setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // Phát tín hiệu cho Navbar
+        // 5. Phát tín hiệu cho Navbar cập nhật trạng thái
         window.dispatchEvent(new Event("userLogin"));
 
-        // 4. Chuyển hướng theo đúng Role
+        // 6. Chuyển hướng theo đúng Role
         setTimeout(() => {
           if (role === 1 || role === "1" || role === "admin") {
-            window.location.href = "/admin/products";
+            window.location.href = "/admin/dashboard";
           } else {
             window.location.href = "/";
           }
-        }, 10);
+        }, 300);
       } else {
         setMessage(data.message || "Login failed!");
       }

@@ -1,11 +1,10 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-// 1. Get profile of logged-in user
+// 1. Lấy thông tin cá nhân của người dùng đang đăng nhập
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?._id;
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found in database.' });
     }
@@ -15,15 +14,11 @@ const getProfile = async (req, res) => {
   }
 };
 
-// 2. Update profile (Name and Email)
+// 2. Cập nhật thông tin cá nhân (Chỉ còn cập nhật Name)
 const updateProfile = async (req, res) => {
   try {
-    const { name, email } = req.body;
-    const userId = req.user?.id || req.user?._id;
-
-    if (!userId) {
-      return res.status(400).json({ success: false, message: 'User ID missing from token. Please log in again.' });
-    }
+    const { name } = req.body;
+    const user = await User.findById(req.user.id);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -31,7 +26,6 @@ const updateProfile = async (req, res) => {
     }
 
     if (name) user.name = name;
-    if (email) user.email = email;
 
     await user.save();
 
@@ -51,7 +45,7 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// 3. Change password
+// 3. Đổi mật khẩu
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -61,7 +55,7 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide both current and new passwords.' });
     }
 
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
@@ -82,6 +76,7 @@ const changePassword = async (req, res) => {
 
 // ==================== ADMIN CONTROLLERS ====================
 
+// 4. Lấy danh sách tất cả người dùng (Chỉ dành cho Admin)
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
@@ -91,6 +86,7 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// 5. Cập nhật phân quyền người dùng (Chỉ dành cho Admin: 0 - Customer, 1 - Admin)
 const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
@@ -115,6 +111,7 @@ const updateUserRole = async (req, res) => {
   }
 };
 
+// 6. Xóa người dùng (Chỉ dành cho Admin)
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);

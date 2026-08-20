@@ -7,16 +7,15 @@ const {
   updateProduct,
   deleteProduct
 } = require('../controller/productController');
+const { verifyToken, verifyOptionalToken } = require('../middleware/authMiddleware');
 
-const { verifyAdmin } = require('../middleware/authMiddleware');
 
-// Public routes
+// Route xem chi tiết sản phẩm (Sử dụng verifyOptionalToken nếu muốn lấy req.user khi đã đăng nhập)
+router.get('/:id', verifyOptionalToken, getProductDetail);
+
 router.get('/', getProducts);
-router.get('/:id', getProductDetail);
-
-// Protected routes (Chỉ Admin mới có quyền thao tác)
-router.post('/', verifyAdmin, createProduct);
-router.put('/:id', verifyAdmin, updateProduct);
-router.delete('/:id', verifyAdmin, deleteProduct);
+router.post('/', verifyToken, createProduct);
+router.put('/:id', verifyToken, updateProduct);
+router.delete('/:id', verifyToken, deleteProduct);
 
 module.exports = router;

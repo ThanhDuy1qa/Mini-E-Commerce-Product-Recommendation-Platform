@@ -13,14 +13,16 @@ const register = async (req, res) => {
 
     const formattedEmail = email.toLowerCase().trim();
 
-    // Kiểm tra Email tồn tại
+    // Kiểm tra Email đã tồn tại chưa
     const existingUser = await User.findOne({ email: formattedEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email address is already registered.' });
     }
 
-    // Hash mật khẩu bắt buộc
+    // Hash mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Tạo user mới
     const user = await User.create({
       name,
       email: formattedEmail,
@@ -33,6 +35,14 @@ const register = async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
+    // In lỗi chi tiết ra Terminal
+    console.error("❌ Register Error Details:", error);
+
+    // Nếu Mongoose báo lỗi trùng E11000 (Duplicate Email)
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Email address is already registered.' });
+    }
+
     res.status(500).json({ success: false, message: 'Registration failed.', error: error.message });
   }
 };

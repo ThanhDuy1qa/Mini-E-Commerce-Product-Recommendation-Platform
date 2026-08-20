@@ -2,17 +2,17 @@ const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const { logInteraction } = require('../utils/interactionHelper');
 
 // POST /api/orders
 // Create an order from the current user's cart
 const createOrder = async (req, res) => {
   try {
-    const cart = await Cart.findOne({
-      user: req.user.id
-    }).populate('items.product');
+    const userId = req.user.id || req.user._id;
+    const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
     // Cart does not exist or is empty
-    if (!cart || cart.items.length === 0) {
+    if (!cart || !cart.items || cart.items.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Cart is empty.'
@@ -33,25 +33,28 @@ const createOrder = async (req, res) => {
         });
       }
 
+      const productName = product.title || product.name || 'Product';
+
       if (!Number.isInteger(item.quantity) || item.quantity < 1) {
         return res.status(400).json({
           success: false,
-          message: `Invalid quantity for product ${product.name}.`
+          message: `Invalid quantity for product ${productName}.`
         });
       }
 
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for product ${product.name}.`
+          message: `Insufficient stock for product ${productName}.`
         });
       }
 
       orderProducts.push({
         product: product._id,
-        name: product.name,
+        name: productName,
         price: product.price,
-        quantity: item.quantity
+        quantity: item.quantity,
+        image_url: product.image_url || product.image || ''
       });
 
       totalPrice += product.price * item.quantity;
@@ -59,22 +62,20 @@ const createOrder = async (req, res) => {
 
     // Create the order
     const order = await Order.create({
-      user: req.user.id,
+      user: userId,
       products: orderProducts,
       totalPrice,
       status: 'Pending'
     });
 
-    // Reduce product stock
+    // Reduce product stock and log purchase interactions
     for (const item of cart.items) {
-      await Product.findByIdAndUpdate(
-        item.product._id,
-        {
-          $inc: {
-            stock: -item.quantity
-          }
-        }
-      );
+      if (item.product && item.product._id) {
+        await Product.findByIdAndUpdate(item.product._id, {
+          $inc: { stock: -item.quantity }
+        });
+        logInteraction(userId, item.product._id, 'purchase');
+      }
     }
 
     // Clear cart after successful checkout
@@ -99,9 +100,8 @@ const createOrder = async (req, res) => {
 // Get order history of current user
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      user: req.user.id
-    })
+    const userId = req.user.id || req.user._id;
+    const orders = await Order.find({ user: userId })
       .populate('products.product')
       .sort({ createdAt: -1 });
 
@@ -113,7 +113,7 @@ const getMyOrders = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to get order history.',
+      message: 'Failed to fetch order history.',
       error: error.message
     });
   }
@@ -124,6 +124,7 @@ const getMyOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id || req.user._id;
 
     if (!mongoose.isValidObjectId(id)) {
       return res.status(400).json({
@@ -134,7 +135,7 @@ const getOrderById = async (req, res) => {
 
     const order = await Order.findOne({
       _id: id,
-      user: req.user.id
+      user: userId
     }).populate('products.product');
 
     if (!order) {
@@ -151,7 +152,7 @@ const getOrderById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to get order.',
+      message: 'Failed to fetch order details.',
       error: error.message
     });
   }

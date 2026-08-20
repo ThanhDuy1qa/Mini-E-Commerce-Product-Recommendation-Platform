@@ -25,9 +25,17 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Gọi API lấy thông tin chi tiết sản phẩm từ Backend
   useEffect(() => {
-    fetch(`http://localhost:5000/api/products/${resolvedParams.id}`)
+    // 1. Lấy token từ localStorage (nếu người dùng đã đăng nhập)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // 2. Gửi kèm Header Authorization để Backend nhận diện người dùng
+    fetch(`http://localhost:5000/api/products/${resolvedParams.id}`, { headers })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -98,7 +106,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             >
               {isOutOfStock ? "🚫 Out of Stock" : "🛒 Add to Cart"}
             </button>
-            
           </div>
         </div>
       </div>
