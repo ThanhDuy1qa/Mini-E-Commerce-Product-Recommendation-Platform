@@ -1,42 +1,53 @@
-const User = require('../models/User');[cite: 1, 6]
-const bcrypt = require('bcryptjs');[cite: 3, 6]
+const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
-// 1. Get current logged-in user profile
+// 1. Get profile of logged-in user
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');[cite: 1, 2, 6]
+    const userId = req.user?.id || req.user?._id;
+    const user = await User.findById(userId).select('-password');
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'User not found in database.' });
     }
     res.json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching user profile.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 2. Update user profile (Name, amazon_id)
+// 2. Update profile (Name and Email)
 const updateProfile = async (req, res) => {
   try {
-    const { name, amazon_id } = req.body;[cite: 1, 6]
-    const user = await User.findById(req.user.id);[cite: 2, 6]
+    const { name, email } = req.body;
+    const userId = req.user?.id || req.user?._id;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID missing from token. Please log in again.' });
     }
 
-    if (name) user.name = name;[cite: 1, 6]
-    if (amazon_id !== undefined) user.amazon_id = amazon_id;[cite: 1, 6]
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found in database.' });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
 
     await user.save();
-    
-    const updatedUser = await User.findById(req.user.id).select('-password');
+
+    const updatedUser = await User.findById(userId).select('-password');
     res.json({
       success: true,
       message: 'Profile updated successfully.',
       user: updatedUser
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update profile.', error: error.message });
+    console.error("Update profile error:", error);
+    // Tra ve nguyen nhan loi chi tiet de Frontend hien thi
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update profile.'
+    });
   }
 };
 
@@ -44,43 +55,42 @@ const updateProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.id || req.user?._id;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Please provide both current and new passwords.' });
     }
 
-    const user = await User.findById(req.user.id);[cite: 1, 2, 6]
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);[cite: 1, 3, 6]
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Incorrect current password.' });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);[cite: 1, 3, 6]
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     res.json({ success: true, message: 'Password changed successfully.' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to change password.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
 // ==================== ADMIN CONTROLLERS ====================
 
-// 4. Get all users (Admin only)
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });[cite: 1, 6]
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json({ success: true, count: users.length, users });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching users list.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 5. Update user role (Admin only: 0 - Customer, 1 - Admin)
 const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
@@ -101,11 +111,10 @@ const updateUserRole = async (req, res) => {
 
     res.json({ success: true, message: 'User role updated successfully.', user });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error updating user role.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 6. Delete user (Admin only)
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
@@ -114,7 +123,7 @@ const deleteUser = async (req, res) => {
     }
     res.json({ success: true, message: 'User deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error deleting user.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

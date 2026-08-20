@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { cart } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
   // Kiểm tra xem người dùng đã đăng nhập chưa (đọc từ localStorage)
@@ -48,6 +49,12 @@ export default function Navbar() {
     router.push("/login");
   };
 
+  // 1. Ẩn Navbar hoàn toàn khi ở trang Admin
+  if (pathname?.startsWith("/admin")) return null;
+
+  // Kiểm tra role Admin
+  const isAdmin = user?.role === 1 || user?.role === "1" || user?.role === "admin";
+
   // Tính tổng số lượng sản phẩm trong giỏ hàng để hiển thị lên Badge đỏ
   const totalItems = (Array.isArray(cart) ? cart : []).reduce(
     (sum, item) => sum + (item.quantity || 1), 0
@@ -87,6 +94,17 @@ export default function Navbar() {
             {/* KHU VỰC TÀI KHOẢN */}
             {user ? (
               <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
+                
+                {/* 2. Nút quay lại Admin Panel khi tài khoản admin đang xem trang bán hàng */}
+                {isAdmin && (
+                  <Link
+                    href="/admin/products"
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-700 transition text-sm font-bold flex items-center gap-1 shadow-xs"
+                  >
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+
                 <Link 
                   href="/profile" 
                   className="text-sm font-bold text-gray-800 hover:text-blue-600 transition flex items-center gap-1 cursor-pointer"
@@ -94,6 +112,7 @@ export default function Navbar() {
                 >
                   👤 {user.name || user.email || "User"}
                 </Link>
+
                 <button
                   onClick={handleLogout}
                   className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold cursor-pointer"
