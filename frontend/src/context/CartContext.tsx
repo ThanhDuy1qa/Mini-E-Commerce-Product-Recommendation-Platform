@@ -93,10 +93,22 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, [cart]);
 
   // 2. Hàm dọn sạch giỏ hàng local khi Logout
-  const clearCart = () => {
+  // Sửa lại hàm clearCart trong CartContext.tsx
+  const clearCart = async () => {
     setCart([]);
     if (typeof window !== "undefined") {
       localStorage.removeItem("mini_cart");
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          await fetch("http://localhost:5000/api/cart", {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch (err) {
+          console.error("Error clearing cart on server:", err);
+        }
+      }
     }
   };
 

@@ -1,23 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface CartItem {
-  _id?: string;
-  productId: {
-    _id: string;
-    name: string;
-    price: number;
-    image?: string;
-  };
-  quantity: number;
-}
+import { useCart } from '@/context/CartContext';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { cart, clearCart } = useCart(); 
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -27,38 +16,8 @@ export default function CheckoutPage() {
     paymentMethod: 'COD',
   });
 
-  // Lấy dữ liệu giỏ hàng chuẩn từ Backend API
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        const res = await fetch('http://localhost:5000/api/cart', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          const items = data.cart?.items || data.items || [];
-          setCartItems(items);
-        }
-      } catch (err) {
-        console.error('Error fetching cart from server:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCart();
-  }, [router]);
-
-  const subtotal = cartItems.reduce((acc, item) => {
-    const price = item.productId?.price || 0;
-    return acc + price * item.quantity;
+  const subtotal = cart.reduce((acc, item) => {
+    return acc + (item.price || 0) * (item.quantity || 1);
   }, 0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -67,7 +26,7 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cartItems.length === 0) {
+    if (cart.length === 0) {
       alert('Your cart is empty!');
       return;
     }
@@ -75,31 +34,63 @@ export default function CheckoutPage() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
+
+      // 1. Định dạng mảng sản phẩm hỗ trợ cả 2 dạng tên trường (title/name, image/image_url)
+      const formattedItems = cart.map((item) => ({
+        product: item._id || item.asin,
+        productId: item._id || item.asin,
+        title: item.title,
+        name: item.title,
+        price: Number(item.price),
+        quantity: Number(item.quantity),
+        image: item.image_url,
+        image_url: item.image_url,
+      }));
+
+      // 2. Tạo Payload tổng hợp tương thích mọi Mongoose Order Schema
+      const payload = {
+        shippingAddress: {
+          fullName: formData.fullName,
+          phone: formData.phone,
+          address: formData.address,
+        },
+        paymentMethod: formData.paymentMethod,
+        items: formattedItems,
+        orderItems: formattedItems,
+        products: formattedItems,
+        totalAmount: subtotal,
+        totalPrice: subtotal,
+      };
+
       const res = await fetch('http://localhost:5000/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          shippingAddress: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            address: formData.address,
-          },
-          paymentMethod: formData.paymentMethod,
-          items: cartItems,
-          totalAmount: subtotal,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (res.ok) {
+        // 3. Xóa giỏ hàng local state & gửi API xóa giỏ hàng trên DB
+        if (clearCart) {
+          await clearCart();
+        } else {
+          localStorage.removeItem('mini_cart');
+        }
+
+        await fetch('http://localhost:5000/api/cart', {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+
         alert('Order placed successfully!');
         router.push('/orders');
       } else {
-        alert(`Order failed: ${data.message || 'Please try again'}`);
+        console.error('Backend rejected order:', data);
+        alert(`Order failed: ${data.message || 'Server error'}`);
       }
     } catch (err) {
       console.error('Checkout error:', err);
@@ -109,13 +100,9 @@ export default function CheckoutPage() {
     }
   };
 
-  if (loading) {
-    return <div className="p-12 text-center text-gray-600 font-medium">Loading checkout details...</div>;
-  }
-
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Form điền thông tin giao hàng */}
+      {/* Form điền thông tin */}
       <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Shipping Information</h2>
         <form onSubmit={handleSubmitOrder} className="space-y-4">
@@ -173,7 +160,7 @@ export default function CheckoutPage() {
 
           <button
             type="submit"
-            disabled={submitting || cartItems.length === 0}
+            disabled={submitting || cart.length === 0}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition duration-200 mt-6 disabled:opacity-50"
           >
             {submitting ? 'Processing...' : `Place Order ($${subtotal.toFixed(2)})`}
@@ -185,29 +172,27 @@ export default function CheckoutPage() {
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Order Summary</h3>
 
-        {cartItems.length === 0 ? (
+        {cart.length === 0 ? (
           <p className="text-gray-500 py-4 text-center">Your cart is empty.</p>
         ) : (
           <div className="divide-y divide-gray-100 mb-4 max-h-80 overflow-y-auto pr-1">
-            {cartItems.map((item, index) => (
+            {cart.map((item, index) => (
               <div key={item._id || index} className="py-3 flex items-center justify-between gap-3">
-                {item.productId?.image && (
+                {item.image_url && (
                   <img
-                    src={item.productId.image}
-                    alt={item.productId?.name || 'Product'}
+                    src={item.image_url}
+                    alt={item.title}
                     className="w-12 h-12 object-cover rounded-lg border border-gray-100 shrink-0"
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-gray-800 text-sm truncate">
-                    {item.productId?.name || 'Product'}
-                  </p>
+                  <p className="font-semibold text-gray-800 text-sm truncate">{item.title}</p>
                   <p className="text-xs text-gray-500">
-                    Qty: {item.quantity} × ${(item.productId?.price || 0).toFixed(2)}
+                    Qty: {item.quantity} × ${(item.price).toFixed(2)}
                   </p>
                 </div>
                 <p className="font-semibold text-gray-900 text-sm">
-                  ${((item.productId?.price || 0) * item.quantity).toFixed(2)}
+                  ${(item.price * item.quantity).toFixed(2)}
                 </p>
               </div>
             ))}

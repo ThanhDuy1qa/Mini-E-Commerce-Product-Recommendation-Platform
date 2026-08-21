@@ -72,57 +72,63 @@ export default function OrdersPage() {
             </Link>
           </div>
         ) : (
-          orders.map((order) => (
-            <div
-              key={order._id}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-            >
-              <div>
-                <p className="text-sm text-gray-500 mb-1">
-                  Order ID: <span className="font-bold text-gray-900">{order._id}</span>
-                </p>
-                <p className="text-sm text-gray-500">
-                  Date:{' '}
-                  {order.createdAt
-                    ? new Date(order.createdAt).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })
-                    : 'N/A'}{' '}
-                  • {order.products?.length || 0} Items
-                </p>
-              </div>
+          orders.map((order) => {
+            // Sửa lỗi đọc sai mảng sản phẩm và tổng tiền
+            const orderItems = order.items || order.products || order.orderItems || [];
+            const total = order.totalAmount ?? order.totalPrice ?? 0;
 
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6 w-full md:w-auto mt-4 md:mt-0">
-                <div className="text-left md:text-right">
-                  <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-                  <p className="text-xl font-bold text-red-600">
-                    ${Number(order.totalPrice || 0).toFixed(2)}
+            return (
+              <div
+                key={order._id}
+                className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+              >
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    Order ID: <span className="font-bold text-gray-900">{order._id}</span>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Date:{' '}
+                    {order.createdAt
+                      ? new Date(order.createdAt).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'N/A'}{' '}
+                    • {orderItems.length} Items
                   </p>
                 </div>
 
-                <span
-                  className={`px-4 py-2 rounded-xl font-bold text-sm text-center min-w-[120px] ${getStatusBadgeClass(
-                    order.status
-                  )}`}
-                >
-                  {order.status}
-                </span>
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6 w-full md:w-auto mt-4 md:mt-0">
+                  <div className="text-left md:text-right">
+                    <p className="text-sm text-gray-500 mb-1">Total Amount</p>
+                    <p className="text-xl font-bold text-red-600">
+                      ${Number(total).toFixed(2)}
+                    </p>
+                  </div>
 
-                <button
-                  onClick={() => setSelectedOrder(order)}
-                  className="bg-gray-100 text-gray-800 font-semibold px-4 py-2 rounded-xl hover:bg-gray-200 transition whitespace-nowrap"
-                >
-                  View Details
-                </button>
+                  <span
+                    className={`px-4 py-2 rounded-xl font-bold text-sm text-center min-w-[120px] ${getStatusBadgeClass(
+                      order.status || 'Pending'
+                    )}`}
+                  >
+                    {order.status || 'Pending'}
+                  </span>
+
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    className="bg-gray-100 text-gray-800 font-semibold px-4 py-2 rounded-xl hover:bg-gray-200 transition whitespace-nowrap"
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
-      {/* Modal kích thước lớn (max-w-2xl, p-10) */}
+      {/* Modal chi tiết đơn hàng */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-10 shadow-2xl relative">
@@ -138,39 +144,47 @@ export default function OrdersPage() {
             </h2>
             <p className="text-base text-gray-500 mb-6">
               Date:{' '}
-              {new Date(selectedOrder.createdAt).toLocaleDateString('en-US', {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              {selectedOrder.createdAt
+                ? new Date(selectedOrder.createdAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : 'N/A'}
             </p>
 
             <div className="border-t border-b border-gray-100 divide-y divide-gray-100 max-h-96 overflow-y-auto my-6 py-4">
-              {selectedOrder.products?.map((item: any, idx: number) => {
-                const imageUrl =
-                  item.image ||
-                  item.product?.image ||
-                  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&q=80';
+              {(selectedOrder.items || selectedOrder.products || selectedOrder.orderItems || []).map(
+                (item: any, idx: number) => {
+                  const title = item.title || item.name || item.product?.title || item.product?.name || 'Product';
+                  const imageUrl =
+                    item.image ||
+                    item.image_url ||
+                    item.product?.image_url ||
+                    item.product?.image ||
+                    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&q=80';
+                  const price = Number(item.price || item.product?.price || 0);
 
-                return (
-                  <div key={item._id || idx} className="py-5 flex items-center gap-6">
-                    <img
-                      src={imageUrl}
-                      alt={item.name}
-                      className="w-20 h-20 rounded-2xl object-cover bg-gray-50 border border-gray-100 shadow-sm shrink-0"
-                    />
-                    <div className="flex-1">
-                      <p className="font-bold text-lg text-gray-900">{item.name}</p>
-                      <p className="text-base text-gray-500 mt-1">
-                        Qty: {item.quantity} × ${Number(item.price).toFixed(2)}
-                      </p>
+                  return (
+                    <div key={item._id || idx} className="py-5 flex items-center gap-6">
+                      <img
+                        src={imageUrl}
+                        alt={title}
+                        className="w-20 h-20 rounded-2xl object-cover bg-gray-50 border border-gray-100 shadow-sm shrink-0"
+                      />
+                      <div className="flex-1">
+                        <p className="font-bold text-lg text-gray-900">{title}</p>
+                        <p className="text-base text-gray-500 mt-1">
+                          Qty: {item.quantity} × ${price.toFixed(2)}
+                        </p>
+                      </div>
+                      <span className="font-extrabold text-xl text-gray-900">
+                        ${(item.quantity * price).toFixed(2)}
+                      </span>
                     </div>
-                    <span className="font-extrabold text-xl text-gray-900">
-                      ${(item.quantity * item.price).toFixed(2)}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                }
+              )}
             </div>
 
             <div className="flex justify-between items-center pt-4 mt-2">
@@ -178,16 +192,16 @@ export default function OrdersPage() {
                 <span className="text-base font-semibold text-gray-500">Status:</span>
                 <span
                   className={`px-4 py-1.5 rounded-xl text-sm font-bold ${getStatusBadgeClass(
-                    selectedOrder.status
+                    selectedOrder.status || 'Pending'
                   )}`}
                 >
-                  {selectedOrder.status}
+                  {selectedOrder.status || 'Pending'}
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-xs text-gray-400 block uppercase tracking-wide">Total Amount</span>
                 <span className="text-3xl font-black text-gray-900">
-                  ${Number(selectedOrder.totalPrice || 0).toFixed(2)}
+                  ${Number(selectedOrder.totalAmount ?? selectedOrder.totalPrice ?? 0).toFixed(2)}
                 </span>
               </div>
             </div>
