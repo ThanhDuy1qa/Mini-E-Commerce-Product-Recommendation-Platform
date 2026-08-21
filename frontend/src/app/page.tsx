@@ -137,9 +137,7 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <span>✨</span> Recommended For You
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Sản phẩm đề xuất dựa trên sở thích và tương tác của bạn
-              </p>
+
             </div>
             <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm">
               Personalized

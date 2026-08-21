@@ -51,11 +51,10 @@ router.get(
 // ADMIN UPDATE ORDER STATUS
 // =========================
 router.put(
-  '/:id/status',
+  '/:id',
   verifyAdmin,
   updateOrderStatus
 );
-
 
 // =========================
 // USER + ADMIN GET ORDER DETAIL
