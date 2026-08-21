@@ -24,42 +24,10 @@ interface Category {
   image_url?: string;
 }
 
-// Dữ liệu mẫu gợi ý dự phòng khi chưa đăng nhập hoặc API Backend chưa sẵn sàng
-const MOCK_RECOMMENDATIONS: Product[] = [
-  {
-    _id: "rec1",
-    name: "Bàn phím cơ Custom K87 RGB",
-    price: 120.0,
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400",
-  },
-  {
-    _id: "rec2",
-    name: "Chuột Gaming Không Dây Ergonomic",
-    price: 45.5,
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400",
-  },
-  {
-    _id: "rec3",
-    name: "Tai nghe Bluetooth Over-Ear",
-    price: 85.5,
-    category: "Audio",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
-  },
-  {
-    _id: "rec4",
-    name: "Lót chuột Chống Nước RGB XL",
-    price: 25.0,
-    category: "Accessories",
-    image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-  },
-];
-
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
-  const [recommendations, setRecommendations] = useState<Product[]>(MOCK_RECOMMENDATIONS);
+  const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -72,16 +40,22 @@ export default function Home() {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // 1. Gọi API Gợi ý (Truyền token nếu đã đăng nhập)
+    // 1. Gọi API Gợi ý thật từ Backend
     fetch("http://localhost:5000/api/recommendations", { headers })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch recommendations");
+        return res.json();
+      })
       .then((data) => {
         const recList = data?.data || data?.recommendations || (Array.isArray(data) ? data : []);
-        if (Array.isArray(recList) && recList.length > 0) {
+        if (Array.isArray(recList)) {
           setRecommendations(recList.slice(0, 5));
         }
       })
-      .catch((err) => console.error("Error fetching recommendations:", err));
+      .catch((err) => {
+        console.error("Error fetching recommendations:", err);
+        setRecommendations([]);
+      });
 
     // 2. Gọi API lấy tất cả sản phẩm
     fetch("http://localhost:5000/api/products")
@@ -155,7 +129,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Block Sản phẩm Gợi ý (Recommended For You) */}
+      {/* Block Sản phẩm Gợi ý Thực tế (Recommended For You) */}
       {recommendations.length > 0 && (
         <section className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 p-6 md:p-8 rounded-3xl border border-blue-100 shadow-sm space-y-6">
           <div className="flex justify-between items-center">
@@ -173,7 +147,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {recommendations.slice(0, 5).map((item) => {
+            {recommendations.map((item) => {
               const id = item._id || item.asin || item.id;
               const name = item.name || item.title || "Recommended Item";
               const image = item.image || item.image_url || "https://via.placeholder.com/300";

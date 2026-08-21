@@ -24,14 +24,11 @@ export default function Navbar() {
       } else {
         setUser(null);
       }
-      // Tải lại giỏ hàng tương ứng với trạng thái auth hiện tại
       fetchCart();
     };
 
-    // Load trạng thái ban đầu
     checkAuth();
 
-    // Lắng nghe các sự kiện đăng nhập
     window.addEventListener("userLogin", checkAuth);
     window.addEventListener("storage", checkAuth);
 
@@ -41,22 +38,19 @@ export default function Navbar() {
     };
   }, [fetchCart]);
 
-  // Hàm xử lý khi bấm nút Đăng xuất
+  // Kiểm tra xem user hiện tại có phải là Admin không (role = 1)
+  const isAdmin = user?.role === 1;
+
   const handleLogout = () => {
-    // 1. Xóa thông tin đăng nhập
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     
-    // 2. Xóa sạch giỏ hàng trong State & localStorage
     clearCart();
-    
-    // 3. Cập nhật State giao diện
     setUser(null);
     alert("Logged out successfully!");
     router.push("/login");
   };
 
-  // Tính tổng số lượng sản phẩm trong giỏ hàng
   const totalItems = (Array.isArray(cart) ? cart : []).reduce(
     (sum, item) => sum + (item.quantity || 1), 0
   );
@@ -95,7 +89,7 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
                 
-                {/* 2. Nút quay lại Admin Panel khi tài khoản admin đang xem trang bán hàng */}
+                {/* Nút quay lại Admin Panel dành cho Admin */}
                 {isAdmin && (
                   <Link
                     href="/admin/products"
