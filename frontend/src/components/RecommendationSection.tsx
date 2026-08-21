@@ -30,7 +30,7 @@ export default function RecommendationSection() {
           }
         }
       } catch (err) {
-        // Giữ nguyên MOCK_RECOMMENDATIONS nếu API lỗi hoặc chưa có
+        console.error('Error fetching recommendations:', err);
       }
     };
 
@@ -42,7 +42,7 @@ export default function RecommendationSection() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Recommended For You</h2>
-          <p className="text-sm text-gray-500">Dựa trên lịch sử xem & sở thích của bạn</p>
+          <p className="text-sm text-gray-500">Based on your browsing history and preferences</p>
         </div>
         <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-semibold">AI Powered</span>
       </div>

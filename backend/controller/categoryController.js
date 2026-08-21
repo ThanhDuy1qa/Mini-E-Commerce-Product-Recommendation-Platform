@@ -1,6 +1,5 @@
 const Category = require('../models/Category');
 
-// Lấy toàn bộ danh sách Category
 const getCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
@@ -16,7 +15,6 @@ const getCategories = async (req, res) => {
   }
 };
 
-// Lấy chi tiết 1 Category theo ID
 const getCategoryById = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
@@ -32,10 +30,9 @@ const getCategoryById = async (req, res) => {
   }
 };
 
-// Tạo Category mới (Yêu cầu quyền Admin)
 const createCategory = async (req, res) => {
   try {
-    const { name, image_url } = req.body;
+    const { name, description } = req.body; 
 
     if (!name) {
       return res.status(400).json({ success: false, message: "Category name is required" });
@@ -46,7 +43,7 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: "Category name already exists" });
     }
 
-    const category = await Category.create({ name, image_url });
+    const category = await Category.create({ name, description });
     res.status(201).json({
       success: true,
       category
@@ -56,14 +53,13 @@ const createCategory = async (req, res) => {
   }
 };
 
-// Cập nhật Category (Yêu cầu quyền Admin)
 const updateCategory = async (req, res) => {
   try {
-    const { name, image_url } = req.body;
+    const { name, description } = req.body; 
 
     const category = await Category.findByIdAndUpdate(
       req.params.id,
-      { name, image_url },
+      { name, description },
       { new: true, runValidators: true }
     );
 
@@ -80,7 +76,7 @@ const updateCategory = async (req, res) => {
   }
 };
 
-// Xóa Category (Yêu cầu quyền Admin)
+
 const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
