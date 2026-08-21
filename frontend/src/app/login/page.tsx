@@ -56,14 +56,14 @@ export default function LoginPage() {
         // 5. Phát tín hiệu cho Navbar cập nhật trạng thái
         window.dispatchEvent(new Event("userLogin"));
 
-        // 6. Chuyển hướng theo đúng Role
+        // 6. Chuyển hướng theo đúng Role (Đã sửa đường dẫn Admin ở đây)
         setTimeout(() => {
           if (role === 1 || role === "1" || role === "admin") {
-            window.location.href = "/admin/dashboard";
+            window.location.href = "/admin/products";
           } else {
             window.location.href = "/";
           }
-        }, 300);
+        }, 30);
       } else {
         setMessage(data.message || "Login failed!");
       }

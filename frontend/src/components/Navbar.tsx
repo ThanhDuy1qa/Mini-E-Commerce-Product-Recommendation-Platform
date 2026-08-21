@@ -55,6 +55,9 @@ export default function Navbar() {
     (sum, item) => sum + (item.quantity || 1), 0
   );
 
+  // ẨN NAVBAR KHI Ở CÁC TRANG ADMIN
+  if (pathname?.startsWith("/admin")) return null;
+
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
