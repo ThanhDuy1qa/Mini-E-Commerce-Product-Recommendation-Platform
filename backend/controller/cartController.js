@@ -1,18 +1,17 @@
 const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const { logInteraction } = require('../utils/interactionHelper');
 
 // Calculate cart total
 const calculateTotal = (cart) => {
   return cart.items.reduce((total, item) => {
     if (!item.product) return total;
-
     return total + item.product.price * item.quantity;
   }, 0);
 };
 
-// GET /api/cart
-// Get current user's cart
+// GET /api/cart - Get current user's cart
 const getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({
@@ -46,11 +45,11 @@ const getCart = async (req, res) => {
   }
 };
 
-// POST /api/cart/items
-// Add product to cart
+// POST /api/cart/items - Add product to cart & log interaction
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
+    const userId = req.user.id || req.user._id;
 
     if (!productId) {
       return res.status(400).json({
@@ -92,12 +91,12 @@ const addToCart = async (req, res) => {
     }
 
     let cart = await Cart.findOne({
-      user: req.user.id
+      user: userId
     });
 
     if (!cart) {
       cart = new Cart({
-        user: req.user.id,
+        user: userId,
         items: []
       });
     }
@@ -126,6 +125,9 @@ const addToCart = async (req, res) => {
 
     await cart.save();
 
+    // LOG INTERACTION: ADD_TO_CART
+    logInteraction(userId, product._id, 'add_to_cart');
+
     await cart.populate('items.product');
 
     const total = calculateTotal(cart);
@@ -145,8 +147,7 @@ const addToCart = async (req, res) => {
   }
 };
 
-// PUT /api/cart/items/:productId
-// Change product quantity
+// PUT /api/cart/items/:productId - Update cart item quantity
 const updateCartItem = async (req, res) => {
   try {
     const { productId } = req.params;
@@ -229,8 +230,7 @@ const updateCartItem = async (req, res) => {
   }
 };
 
-// DELETE /api/cart/items/:productId
-// Remove product from cart
+// DELETE /api/cart/items/:productId - Remove item from cart
 const removeCartItem = async (req, res) => {
   try {
     const { productId } = req.params;

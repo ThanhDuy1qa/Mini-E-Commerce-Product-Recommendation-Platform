@@ -2,18 +2,17 @@ const mongoose = require('mongoose');
 const Cart = require('../models/Cart');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const Interaction = require('../models/Interaction');
+const { logInteraction } = require('../utils/interactionHelper');
 
 // POST /api/orders
 // Create an order from the current user's cart
 const createOrder = async (req, res) => {
   try {
-    const cart = await Cart.findOne({
-      user: req.user.id
-    }).populate('items.product');
+    const userId = req.user.id || req.user._id;
+    const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
     // Cart does not exist or is empty
-    if (!cart || cart.items.length === 0) {
+    if (!cart || !cart.items || cart.items.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Cart is empty.'
@@ -34,25 +33,28 @@ const createOrder = async (req, res) => {
         });
       }
 
+      const productName = product.title || product.name || 'Product';
+
       if (!Number.isInteger(item.quantity) || item.quantity < 1) {
         return res.status(400).json({
           success: false,
-          message: `Invalid quantity for product ${product.name}.`
+          message: `Invalid quantity for product ${productName}.`
         });
       }
 
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for product ${product.name}.`
+          message: `Insufficient stock for product ${productName}.`
         });
       }
 
       orderProducts.push({
         product: product._id,
-        name: product.name,
+        name: productName,
         price: product.price,
-        quantity: item.quantity
+        quantity: item.quantity,
+        image_url: product.image_url || product.image || ''
       });
 
       totalPrice += product.price * item.quantity;
@@ -60,33 +62,20 @@ const createOrder = async (req, res) => {
 
     // Create the order
     const order = await Order.create({
-      user: req.user.id,
+      user: userId,
       products: orderProducts,
       totalPrice,
       status: 'Pending'
     });
 
-    // Reduce product stock
+    // Reduce product stock and log purchase interactions
     for (const item of cart.items) {
-
-      // Trừ stock
-      await Product.findByIdAndUpdate(
-        item.product._id,
-        {
-          $inc: {
-            stock: -item.quantity
-          }
-        }
-      );
-
-
-      // Lưu hành vi mua hàng
-      await Interaction.create({
-        userId: req.user.id,
-        productId: item.product._id,
-        type: 'purchase'
-      });
-
+      if (item.product && item.product._id) {
+        await Product.findByIdAndUpdate(item.product._id, {
+          $inc: { stock: -item.quantity }
+        });
+        logInteraction(userId, item.product._id, 'purchase');
+      }
     }
 
     // Clear cart after successful checkout
@@ -111,9 +100,8 @@ const createOrder = async (req, res) => {
 // Get order history of current user
 const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({
-      user: req.user.id
-    })
+    const userId = req.user.id || req.user._id;
+    const orders = await Order.find({ user: userId })
       .populate('products.product')
       .sort({ createdAt: -1 });
 
@@ -125,7 +113,7 @@ const getMyOrders = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Failed to get order history.',
+      message: 'Failed to fetch order history.',
       error: error.message
     });
   }
@@ -134,87 +122,61 @@ const getMyOrders = async (req, res) => {
 // GET /api/orders/:id
 // Get one order belonging to the current user
 const getOrderById = async (req, res) => {
-
   try {
+    const userId = req.user.id || req.user._id;
 
     let query = {
       _id: req.params.id
     };
 
-
-    // Nếu không phải admin
-    // chỉ xem order của bản thân
+    // Nếu không phải admin chỉ xem order của bản thân
     if (req.user.role !== 1) {
-
-      query.user = req.user.id;
-
+      query.user = userId;
     }
-
 
     const order = await Order.findOne(query)
       .populate('user', 'username name email')
       .populate('products.product');
 
-
     if (!order) {
-
       return res.status(404).json({
         message: "Order not found"
       });
-
     }
 
-
     res.json(order);
-
-
   } catch (error) {
-
     res.status(500).json({
       message: error.message
     });
-
   }
-
 };
-
 
 // GET ALL ORDERS FOR ADMIN
 const getAllOrders = async (req, res) => {
   try {
-
     const orders = await Order.find()
       .populate('user', 'username name email')
       .populate('products.product')
       .sort({ createdAt: -1 });
-
 
     res.status(200).json({
       success: true,
       count: orders.length,
       orders
     });
-
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message
     });
-
   }
 };
 
-
-
 // UPDATE ORDER STATUS FOR ADMIN
 const updateOrderStatus = async (req, res) => {
-
   try {
-
     const { status } = req.body;
-
 
     const allowedStatus = [
       'Pending',
@@ -223,16 +185,13 @@ const updateOrderStatus = async (req, res) => {
       'Cancelled'
     ];
 
-
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({
         message: "Invalid order status"
       });
     }
 
-
     const order = await Order.findById(req.params.id);
-
 
     if (!order) {
       return res.status(404).json({
@@ -240,28 +199,20 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-
     order.status = status;
-
     await order.save();
-
 
     res.status(200).json({
       success: true,
       message: "Order status updated",
       order
     });
-
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message
     });
-
   }
-
 };
 
 module.exports = {

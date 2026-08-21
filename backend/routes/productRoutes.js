@@ -5,23 +5,17 @@ const {
   getProductDetail,
   createProduct,
   updateProduct,
-  deleteProduct,
-  getProductsBySeller,
-  getTopProductsBySeller
-} = require('../controller/productController'); //[cite: 5]
+  deleteProduct
+} = require('../controller/productController');
+const { verifyToken, verifyOptionalToken } = require('../middleware/authMiddleware');
 
-// Import Authentication & Authorization Middleware
-const { verifySeller } = require('../middleware/authMiddleware'); //[cite: 5]
 
-// Public routes
-router.get('/', getProducts); //[cite: 5]
-router.get('/seller/:sellerId', getProductsBySeller); //[cite: 5]
-router.get('/seller/:sellerId/top', getTopProductsBySeller); //[cite: 5]
-router.get('/:id', getProductDetail); //[cite: 5]
+// Route xem chi tiết sản phẩm (Sử dụng verifyOptionalToken nếu muốn lấy req.user khi đã đăng nhập)
+router.get('/:id', verifyOptionalToken, getProductDetail);
 
-// Protected routes (Requires Login & Seller / Admin role)
-router.post('/', verifySeller, createProduct); //[cite: 5]
-router.put('/:id', verifySeller, updateProduct); //[cite: 5]
-router.delete('/:id', verifySeller, deleteProduct); //[cite: 5]
+router.get('/', getProducts);
+router.post('/', verifyToken, createProduct);
+router.put('/:id', verifyToken, updateProduct);
+router.delete('/:id', verifyToken, deleteProduct);
 
-module.exports = router; //[cite: 5]
+module.exports = router;
