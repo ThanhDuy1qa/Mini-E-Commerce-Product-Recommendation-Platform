@@ -3,15 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const MOCK_RECOMMENDATIONS = [
-  { _id: 'rec1', name: 'Bàn phím cơ Custom K87', price: 120.0, image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400' },
-  { _id: 'rec2', name: 'Chuột Gaming Không Dây', price: 45.5, image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400' },
-  { _id: 'rec3', name: 'Tai nghe Bluetooth Over-Ear', price: 85.5, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400' },
-  { _id: 'rec4', name: 'Lót chuột RGB XL', price: 25.0, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400' },
-];
 
 export default function RecommendationSection() {
-  const [products, setProducts] = useState<any[]>(MOCK_RECOMMENDATIONS);
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchRecommendations = async () => {

@@ -42,10 +42,10 @@ export default function Navbar() {
   const isAdmin = user?.role === 1;
 
   const handleLogout = () => {
+    clearCart();
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    
-    clearCart();
+    localStorage.removeItem("mini_cart");
     setUser(null);
     alert("Logged out successfully!");
     router.push("/login");

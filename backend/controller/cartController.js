@@ -15,14 +15,14 @@ const calculateTotal = (cart) => {
 const getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({
-      user: req.user.id
+      user: req.user._id
     }).populate('items.product');
 
     if (!cart) {
       return res.status(200).json({
         success: true,
         cart: {
-          user: req.user.id,
+          user: req.user._id,
           items: []
         },
         total: 0
@@ -49,7 +49,7 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
-    const userId = req.user.id || req.user._id;
+    const userId = req.user._id;
 
     if (!productId) {
       return res.status(400).json({
@@ -186,7 +186,7 @@ const updateCartItem = async (req, res) => {
     }
 
     const cart = await Cart.findOne({
-      user: req.user.id
+      user: req.user._id
     });
 
     if (!cart) {
@@ -243,7 +243,7 @@ const removeCartItem = async (req, res) => {
     }
 
     const cart = await Cart.findOne({
-      user: req.user.id
+      user: req.user._id
     });
 
     if (!cart) {
