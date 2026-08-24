@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 
 export default function LoginPage() {
@@ -13,9 +14,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Ánh xạ mã Role: 0 - Customer, 1 - Admin
-  const roleMap: Record<number, string> = {
+  const roleMap: Record<number | string, string> = {
     0: "Customer",
     1: "Admin",
+    admin: "Admin",
+    customer: "Customer",
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,31 +35,35 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        // 1. Lưu Token và thông tin User vào localStorage
-        localStorage.setItem("token", data.accessToken);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.success || response.ok) {
+        const userObj = data.user || data;
+        const token = data.accessToken || data.token;
 
-        // 2. Tải giỏ hàng chuẩn từ DB của User vừa đăng nhập
+        // 1. Lưu Token và thông tin User vào localStorage
+        if (token) localStorage.setItem("token", token);
+        if (userObj) localStorage.setItem("user", JSON.stringify(userObj));
+
+        // 2. Tải giỏ hàng từ DB của User vừa đăng nhập
         await fetchCart();
 
-        // 3. Lấy tên Role từ roleMap
-        const userRoleName = roleMap[data.user.role] || "Unknown";
+        // 3. Lấy tên Role
+        const role = userObj?.role;
+        const userRoleName = roleMap[role] || "Customer";
 
         // 4. Hiển thị thông báo
         setMessage(`Login successful! Role: ${userRoleName}`);
 
-        // PHÁT TÍN HIỆU: Báo cho Navbar biết người dùng vừa đăng nhập
+        // 5. Phát tín hiệu cho Navbar cập nhật trạng thái
         window.dispatchEvent(new Event("userLogin"));
 
-        // 5. Chuyển hướng trang
+        // 6. Chuyển hướng theo đúng Role (Đã sửa đường dẫn Admin ở đây)
         setTimeout(() => {
-          if (data.user.role === 1) {
-            window.location.href = "/admin/dashboard";
+          if (role === 1 || role === "1" || role === "admin") {
+            window.location.href = "/admin/products";
           } else {
             window.location.href = "/";
           }
-        }, 500);
+        }, 30);
       } else {
         setMessage(data.message || "Login failed!");
       }
@@ -68,44 +75,78 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen">
-      <form onSubmit={handleLogin} className="p-6 bg-white rounded-lg shadow-md w-96 space-y-4">
-        <h2 className="text-xl font-bold text-center">Login</h2>
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-gray-100 p-8 md:p-10">
         
+        {/* Header Form */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl mb-3 font-black text-xl">
+            🛍️
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
+          <p className="text-sm text-gray-500 mt-1">Please enter your credentials to sign in</p>
+        </div>
+
+        {/* Thông báo Banner */}
         {message && (
-          <div className={`p-3 text-sm rounded border ${
+          <div className={`mb-6 p-4 rounded-2xl text-sm font-semibold border flex items-center gap-2 ${
             message.includes("successful") 
-              ? "bg-green-100 text-green-800 border-green-300" 
-              : "bg-red-100 text-red-800 border-red-300"
+              ? "bg-green-50 text-green-700 border-green-200" 
+              : "bg-red-50 text-red-700 border-red-200"
           }`}>
-            {message}
+            <span>{message.includes("successful") ? "✅" : "⚠️"}</span>
+            <span>{message}</span>
           </div>
         )}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full p-2 border rounded"
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
-        >
-          {isLoading ? "Processing..." : "Login"}
-        </button>
-      </form>
+        {/* Form Đăng Nhập */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Email Address
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition duration-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Password
+            </label>
+            <input
+              type="password"
+              required
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition duration-200"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition duration-200 flex items-center justify-center disabled:opacity-50 mt-2 cursor-pointer"
+          >
+            {isLoading ? "Processing..." : "Login"}
+          </button>
+        </form>
+
+        {/* Chuyển trang Register */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          Don't have an account?{" "}
+          <Link href="/register" className="text-blue-600 font-bold hover:underline">
+            Register now
+          </Link>
+        </div>
+
+      </div>
     </div>
   );
 }

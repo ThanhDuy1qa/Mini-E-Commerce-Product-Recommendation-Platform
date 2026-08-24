@@ -7,13 +7,13 @@ const {
   updateCategory,
   deleteCategory
 } = require('../controller/categoryController');
-const { verifyAdmin } = require('../middleware/authMiddleware'); // Điều chỉnh đường dẫn tới file auth middleware của bạn
+const { verifyAdmin } = require('../middleware/authMiddleware');
 
-// Public Routes (Người dùng xem danh mục)
+// Public Routes 
 router.get('/', getCategories);
 router.get('/:id', getCategoryById);
 
-// Protected Routes (Chỉ Admin mới có quyền thêm, sửa, xóa)
+// Protected Routes
 router.post('/', verifyAdmin, createCategory);
 router.put('/:id', verifyAdmin, updateCategory);
 router.delete('/:id', verifyAdmin, deleteCategory);

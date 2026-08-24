@@ -1,23 +1,69 @@
 const express = require('express');
+
 const router = express.Router();
 
 const {
   createOrder,
   getMyOrders,
-  getOrderById
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus
 } = require('../controller/orderController');
 
+
 const {
-  verifyToken
+  verifyToken,
+  verifyAdmin
 } = require('../middleware/authMiddleware');
 
-// Create order from cart
-router.post('/', verifyToken, createOrder);
 
-// Get current user's order history
-router.get('/', verifyToken, getMyOrders);
+// =========================
+// USER CREATE ORDER
+// =========================
+router.post(
+  '/',
+  verifyToken,
+  createOrder
+);
 
-// Get one order
-router.get('/:id', verifyToken, getOrderById);
+
+// =========================
+// USER ORDER HISTORY
+// =========================
+router.get(
+  '/my-orders',
+  verifyToken,
+  getMyOrders
+);
+
+
+// =========================
+// ADMIN GET ALL ORDERS
+// =========================
+router.get(
+  '/',
+  verifyAdmin,
+  getAllOrders
+);
+
+
+// =========================
+// ADMIN UPDATE ORDER STATUS
+// =========================
+router.put(
+  '/:id',
+  verifyAdmin,
+  updateOrderStatus
+);
+
+// =========================
+// USER + ADMIN GET ORDER DETAIL
+// =========================
+router.get(
+  '/:id',
+  verifyToken,
+  getOrderById
+);
+
 
 module.exports = router;

@@ -4,38 +4,44 @@ const bcrypt = require('bcryptjs');
 // 1. Lấy thông tin cá nhân của người dùng đang đăng nhập
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const userId = req.user?.id || req.user?._id;
+    const user = await User.findById(userId).select('-password');
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'User not found in database.' });
     }
     res.json({ success: true, user });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching user profile.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// 2. Cập nhật thông tin cá nhân (Chỉ còn cập nhật Name)
+// 2. Cập nhật thông tin cá nhân
 const updateProfile = async (req, res) => {
   try {
     const { name } = req.body;
-    const user = await User.findById(req.user.id);
+    const userId = req.user?.id || req.user?._id;
 
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+      return res.status(404).json({ success: false, message: 'User not found in database.' });
     }
 
     if (name) user.name = name;
 
     await user.save();
-    
-    const updatedUser = await User.findById(req.user.id).select('-password');
+
+    const updatedUser = await User.findById(userId).select('-password');
     res.json({
       success: true,
       message: 'Profile updated successfully.',
       user: updatedUser
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update profile.', error: error.message });
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update profile.'
+    });
   }
 };
 
@@ -43,12 +49,13 @@ const updateProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user?.id || req.user?._id;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Please provide both current and new passwords.' });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
@@ -63,7 +70,7 @@ const changePassword = async (req, res) => {
 
     res.json({ success: true, message: 'Password changed successfully.' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to change password.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -75,7 +82,7 @@ const getAllUsers = async (req, res) => {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
     res.json({ success: true, count: users.length, users });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error fetching users list.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -100,7 +107,7 @@ const updateUserRole = async (req, res) => {
 
     res.json({ success: true, message: 'User role updated successfully.', user });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error updating user role.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -113,7 +120,7 @@ const deleteUser = async (req, res) => {
     }
     res.json({ success: true, message: 'User deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error deleting user.', error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

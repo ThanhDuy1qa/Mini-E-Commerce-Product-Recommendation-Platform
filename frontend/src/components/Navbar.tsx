@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { cart, clearCart, fetchCart } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
 
   // Kiểm tra trạng thái đăng nhập và cập nhật giỏ hàng
@@ -23,14 +24,11 @@ export default function Navbar() {
       } else {
         setUser(null);
       }
-      // Tải lại giỏ hàng tương ứng với trạng thái auth hiện tại
       fetchCart();
     };
 
-    // Load trạng thái ban đầu
     checkAuth();
 
-    // Lắng nghe các sự kiện đăng nhập
     window.addEventListener("userLogin", checkAuth);
     window.addEventListener("storage", checkAuth);
 
@@ -40,25 +38,25 @@ export default function Navbar() {
     };
   }, [fetchCart]);
 
-  // Hàm xử lý khi bấm nút Đăng xuất
+  // Kiểm tra xem user hiện tại có phải là Admin không (role = 1)
+  const isAdmin = user?.role === 1;
+
   const handleLogout = () => {
-    // 1. Xóa thông tin đăng nhập
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     
-    // 2. Xóa sạch giỏ hàng trong State & localStorage
     clearCart();
-    
-    // 3. Cập nhật State giao diện
     setUser(null);
     alert("Logged out successfully!");
     router.push("/login");
   };
 
-  // Tính tổng số lượng sản phẩm trong giỏ hàng
   const totalItems = (Array.isArray(cart) ? cart : []).reduce(
     (sum, item) => sum + (item.quantity || 1), 0
   );
+
+  // ẨN NAVBAR KHI Ở CÁC TRANG ADMIN
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
@@ -78,7 +76,7 @@ export default function Navbar() {
             </Link>
 
             <Link href="/orders" className="hover:text-blue-600 transition flex items-center gap-1">
-               My Orders
+              My Orders
             </Link>
 
             <Link href="/cart" className="relative hover:text-blue-600 transition flex items-center gap-1">
@@ -93,12 +91,28 @@ export default function Navbar() {
             {/* USER PROFILE / AUTH BUTTONS */}
             {user ? (
               <div className="flex items-center space-x-3 border-l border-gray-200 pl-4">
-                <span className="text-sm font-bold text-gray-800">
-                  👋 {user.name || user.email || "User"}
-                </span>
+                
+                {/* Nút quay lại Admin Panel dành cho Admin */}
+                {isAdmin && (
+                  <Link
+                    href="/admin/products"
+                    className="bg-blue-600 text-white px-3 py-1.5 rounded-xl hover:bg-blue-700 transition text-sm font-bold flex items-center gap-1 shadow-xs"
+                  >
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+
+                <Link 
+                  href="/profile" 
+                  className="text-sm font-bold text-gray-800 hover:text-blue-600 transition flex items-center gap-1 cursor-pointer"
+                  title="Xem thông tin cá nhân"
+                >
+                  👤 {user.name || user.email || "User"}
+                </Link>
+
                 <button
                   onClick={handleLogout}
-                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold"
+                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl hover:bg-red-100 transition text-sm font-bold cursor-pointer"
                 >
                   Logout
                 </button>

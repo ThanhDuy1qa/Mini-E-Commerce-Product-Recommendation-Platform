@@ -1,7 +1,6 @@
 const Category = require('../models/Category');
 
-// Lấy toàn bộ danh sách Category
-exports.getCategories = async (req, res) => {
+const getCategories = async (req, res) => {
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
     res.status(200).json({
@@ -16,8 +15,7 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-// Lấy chi tiết 1 Category theo ID
-exports.getCategoryById = async (req, res) => {
+const getCategoryById = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -32,10 +30,9 @@ exports.getCategoryById = async (req, res) => {
   }
 };
 
-// Tạo Category mới (Yêu cầu quyền Admin)
-exports.createCategory = async (req, res) => {
+const createCategory = async (req, res) => {
   try {
-    const { name, image_url } = req.body;
+    const { name, description } = req.body; 
 
     if (!name) {
       return res.status(400).json({ success: false, message: "Category name is required" });
@@ -46,7 +43,7 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: "Category name already exists" });
     }
 
-    const category = await Category.create({ name, image_url });
+    const category = await Category.create({ name, description });
     res.status(201).json({
       success: true,
       category
@@ -56,14 +53,13 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// Cập nhật Category (Yêu cầu quyền Admin)
-exports.updateCategory = async (req, res) => {
+const updateCategory = async (req, res) => {
   try {
-    const { name, image_url } = req.body;
+    const { name, description } = req.body; 
 
     const category = await Category.findByIdAndUpdate(
       req.params.id,
-      { name, image_url },
+      { name, description },
       { new: true, runValidators: true }
     );
 
@@ -80,8 +76,8 @@ exports.updateCategory = async (req, res) => {
   }
 };
 
-// Xóa Category (Yêu cầu quyền Admin)
-exports.deleteCategory = async (req, res) => {
+
+const deleteCategory = async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) {
@@ -95,4 +91,12 @@ exports.deleteCategory = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+};
+
+module.exports = {
+  getCategories,
+  getCategoryById,
+  createCategory,
+  updateCategory,
+  deleteCategory
 };
