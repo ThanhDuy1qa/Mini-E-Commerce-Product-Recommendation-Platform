@@ -9,6 +9,17 @@ const { logInteraction } = require('../utils/interactionHelper');
 const createOrder = async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
+
+    // 1. Nhận phone và shippingAddress từ request body gửi lên từ Frontend
+    const { phone, shippingAddress } = req.body;
+
+    if (!phone || !shippingAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number and shipping address are required.'
+      });
+    }
+
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
     // Cart does not exist or is empty
@@ -60,11 +71,13 @@ const createOrder = async (req, res) => {
       totalPrice += product.price * item.quantity;
     }
 
-    // Create the order
+    // 2. Lưu order kèm phone và shippingAddress vào Database
     const order = await Order.create({
       user: userId,
       products: orderProducts,
       totalPrice,
+      phone,
+      shippingAddress,
       status: 'Pending'
     });
 
@@ -129,7 +142,6 @@ const getOrderById = async (req, res) => {
       _id: req.params.id
     };
 
-    // Nếu không phải admin chỉ xem order của bản thân
     if (req.user.role !== 1) {
       query.user = userId;
     }
