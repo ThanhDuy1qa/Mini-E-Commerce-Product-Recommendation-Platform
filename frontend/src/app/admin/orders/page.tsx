@@ -13,6 +13,8 @@ interface Order {
   user?: any;
   products?: OrderItem[];
   totalPrice?: number;
+  phone?: string;           
+  shippingAddress?: string;  
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -24,7 +26,6 @@ export default function AdminOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Fetch orders from API with Auth Token
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
@@ -44,7 +45,6 @@ export default function AdminOrdersPage() {
 
       const data = await res.json();
 
-      // Handle array or wrapped object ({ orders: [...] } or { data: [...] })
       if (Array.isArray(data)) {
         setOrders(data);
       } else if (data.orders && Array.isArray(data.orders)) {
@@ -66,7 +66,6 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, []);
 
-  // Update Order Status
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
     try {
@@ -93,19 +92,33 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // Helper to format Customer Info
-  const renderCustomerInfo = (user: any) => {
-    if (!user) return <span className="text-slate-400 italic">Guest Customer</span>;
-    if (typeof user === "string") return <span className="font-mono text-xs">{user.substring(0, 10)}...</span>;
+  // Helper to format Customer Info including Phone and Shipping Address
+  const renderCustomerInfo = (user: any, phone?: string, shippingAddress?: string) => {
+    if (!user && !phone && !shippingAddress) {
+      return <span className="text-slate-400 italic">Guest Customer</span>;
+    }
+
+    const name = typeof user === "object" ? user?.name : "Customer";
+    const email = typeof user === "object" ? user?.email : typeof user === "string" ? user : "";
+
     return (
-      <div>
-        <p className="font-bold text-slate-800">{user.name || "Customer"}</p>
-        <p className="text-[11px] text-slate-400">{user.email || ""}</p>
+      <div className="space-y-1">
+        <p className="font-bold text-slate-800">{name || "Customer"}</p>
+        {email && <p className="text-[11px] text-slate-400">{email}</p>}
+        {phone && (
+          <p className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+            📞 {phone}
+          </p>
+        )}
+        {shippingAddress && (
+          <p className="text-[11px] text-slate-500 max-w-xs leading-tight" title={shippingAddress}>
+            📍 {shippingAddress}
+          </p>
+        )}
       </div>
     );
   };
 
-  // Status Badge Colors
   const getStatusBadge = (status: string) => {
     const s = status?.toLowerCase() || "";
     if (s === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
@@ -115,13 +128,16 @@ export default function AdminOrdersPage() {
     return "bg-slate-100 text-slate-700 border-slate-200";
   };
 
-  // Filter Orders
+  // Filter Orders by ID, Status, Name, Phone, or Address
   const filteredOrders = orders.filter((o) => {
     const term = searchTerm.toLowerCase();
     const idMatch = o._id?.toLowerCase().includes(term);
     const statusMatch = o.status?.toLowerCase().includes(term);
     const custName = typeof o.user === "object" ? o.user?.name || o.user?.email || "" : "";
-    return idMatch || statusMatch || custName.toLowerCase().includes(term);
+    const phoneMatch = o.phone?.toLowerCase().includes(term);
+    const addressMatch = o.shippingAddress?.toLowerCase().includes(term);
+
+    return idMatch || statusMatch || custName.toLowerCase().includes(term) || phoneMatch || addressMatch;
   });
 
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
@@ -176,10 +192,10 @@ export default function AdminOrdersPage() {
           <span className="font-bold text-slate-800 text-xs">All Orders ({filteredOrders.length})</span>
           <input
             type="text"
-            placeholder="🔍 Search by order ID or status..."
+            placeholder="🔍 Search by order ID, customer, phone, address, status..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-72 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 outline-none"
+            className="w-full sm:w-80 px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 outline-none"
           />
         </div>
 
@@ -188,7 +204,7 @@ export default function AdminOrdersPage() {
             <thead>
               <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/80">
                 <th className="py-3.5 px-6">Order ID</th>
-                <th className="py-3.5 px-6">Customer</th>
+                <th className="py-3.5 px-6">Customer & Shipping Details</th>
                 <th className="py-3.5 px-6">Total Price</th>
                 <th className="py-3.5 px-6">Current Status</th>
                 <th className="py-3.5 px-6 text-right">Update Status</th>
@@ -207,7 +223,9 @@ export default function AdminOrdersPage() {
                     <td className="py-3.5 px-6 font-mono font-bold text-blue-600">
                       #{order._id.substring(0, 8)}...
                     </td>
-                    <td className="py-3.5 px-6">{renderCustomerInfo(order.user)}</td>
+                    <td className="py-3.5 px-6">
+                      {renderCustomerInfo(order.user, order.phone, order.shippingAddress)}
+                    </td>
                     <td className="py-3.5 px-6 font-black text-slate-800 text-sm">
                       ${Number(order.totalPrice || 0).toFixed(2)}
                     </td>

@@ -26,8 +26,18 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (cart.length === 0) {
       alert('Your cart is empty!');
+      return;
+    }
+
+    // Validate dữ liệu bắt buộc trước khi gửi
+    const phone = formData.phone.trim();
+    const shippingAddress = formData.address.trim();
+
+    if (!phone || !shippingAddress) {
+      alert('Please enter both phone number and shipping address!');
       return;
     }
 
@@ -35,31 +45,22 @@ export default function CheckoutPage() {
     try {
       const token = localStorage.getItem('token');
 
-      // 1. Định dạng mảng sản phẩm hỗ trợ cả 2 dạng tên trường (title/name, image/image_url)
       const formattedItems = cart.map((item) => ({
         product: item._id || item.asin,
-        productId: item._id || item.asin,
-        title: item.title,
-        name: item.title,
-        price: Number(item.price),
-        quantity: Number(item.quantity),
-        image: item.image_url,
-        image_url: item.image_url,
+        name: item.title || 'Product',
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        image_url: item.image_url || ''
       }));
 
-      // 2. Tạo Payload tổng hợp tương thích mọi Mongoose Order Schema
+      // Payload truyền trực tiếp phone & shippingAddress chuẩn kiểu String
       const payload = {
-        shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-        },
+        phone: phone,
+        shippingAddress: shippingAddress,
+        fullName: formData.fullName.trim(),
         paymentMethod: formData.paymentMethod,
-        items: formattedItems,
-        orderItems: formattedItems,
         products: formattedItems,
-        totalAmount: subtotal,
-        totalPrice: subtotal,
+        totalPrice: subtotal
       };
 
       const res = await fetch('http://localhost:5000/api/orders', {
@@ -73,24 +74,18 @@ export default function CheckoutPage() {
 
       const data = await res.json();
 
-      if (res.ok) {
-        // 3. Xóa giỏ hàng local state & gửi API xóa giỏ hàng trên DB
+      if (res.ok && data.success) {
         if (clearCart) {
           await clearCart();
         } else {
           localStorage.removeItem('mini_cart');
         }
 
-        await fetch('http://localhost:5000/api/cart', {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => {});
-
         alert('Order placed successfully!');
         router.push('/orders');
       } else {
         console.error('Backend rejected order:', data);
-        alert(`Order failed: ${data.message || 'Server error'}`);
+        alert(`Order failed: ${data.message || data.error || 'Server error'}`);
       }
     } catch (err) {
       console.error('Checkout error:', err);
@@ -102,7 +97,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Form điền thông tin */}
       <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Shipping Information</h2>
         <form onSubmit={handleSubmitOrder} className="space-y-4">
@@ -114,7 +108,7 @@ export default function CheckoutPage() {
               required
               value={formData.fullName}
               onChange={handleInputChange}
-              placeholder="John Doe"
+              placeholder="Khách hàng #0"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
@@ -127,7 +121,7 @@ export default function CheckoutPage() {
               required
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="+1 (555) 000-0000"
+              placeholder="0901234567"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
@@ -140,7 +134,7 @@ export default function CheckoutPage() {
               required
               value={formData.address}
               onChange={handleInputChange}
-              placeholder="123 Main Street, Suite 100"
+              placeholder="123 Vo Van Ngan, Thu Duc"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
@@ -161,14 +155,13 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={submitting || cart.length === 0}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition duration-200 mt-6 disabled:opacity-50"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition duration-200 mt-6 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? 'Processing...' : `Place Order ($${subtotal.toFixed(2)})`}
           </button>
         </form>
       </div>
 
-      {/* Tóm tắt đơn hàng */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Order Summary</h3>
 
