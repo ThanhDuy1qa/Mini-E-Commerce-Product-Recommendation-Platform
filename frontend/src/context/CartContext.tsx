@@ -37,7 +37,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     if (!token) {
-      // Chưa đăng nhập -> Đọc giỏ hàng khách từ localStorage
       try {
         const savedCart = localStorage.getItem("mini_cart");
         if (savedCart) {
@@ -52,7 +51,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Đã đăng nhập -> Lấy giỏ hàng từ DB
     try {
       const res = await fetch("http://localhost:5000/api/cart", {
         headers: {
@@ -63,7 +61,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.success && data.cart && data.cart.items) {
         const formattedCart: CartItem[] = data.cart.items
-          .filter((item: any) => item.product) // Bỏ qua nếu sản phẩm trong DB bị xoá
+          .filter((item: any) => item.product)
           .map((item: any) => ({
             _id: item.product._id,
             asin: item.product.asin || item.product._id,
@@ -80,35 +78,25 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
-  // Gọi fetchCart khi ứng dụng khởi chạy
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
 
-  // Đồng bộ giỏ hàng ra localStorage
+  // Đồng bộ giỏ hàng ra localStorage (CHỈ KHI CHƯA ĐĂNG NHẬP)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("mini_cart", JSON.stringify(cart));
+      const token = localStorage.getItem("token");
+      if (!token) {
+        localStorage.setItem("mini_cart", JSON.stringify(cart));
+      }
     }
   }, [cart]);
 
   // 2. Hàm dọn sạch giỏ hàng local khi Logout
-  // Sửa lại hàm clearCart trong CartContext.tsx
-  const clearCart = async () => {
+  const clearCart = () => {
     setCart([]);
     if (typeof window !== "undefined") {
       localStorage.removeItem("mini_cart");
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          await fetch("http://localhost:5000/api/cart", {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        } catch (err) {
-          console.error("Error clearing cart on server:", err);
-        }
-      }
     }
   };
 
