@@ -102,34 +102,12 @@ export default function Home() {
       {/* Banner chào mừng */}
       <div className="bg-blue-600 rounded-2xl p-8 text-white text-center shadow-lg">
         <h1 className="text-3xl md:text-5xl font-bold mb-2">Welcome to MiniShop</h1>
-        <p className="text-blue-100 text-base md:text-lg mb-6">
+        <p className="text-blue-100 text-base md:text-lg">
           Discover products recommended just for you!
         </p>
-
-        {/* Ô Tìm kiếm nhanh trên Banner */}
-        <div className="max-w-md mx-auto relative">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-white rounded-xl text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-md text-sm font-medium"
-          />
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-            🔍
-          </span>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold bg-gray-200 hover:bg-gray-300 rounded-full w-5 h-5 flex items-center justify-center transition"
-            >
-              ✕
-            </button>
-          )}
-        </div>
       </div>
 
-      {/* Block Sản phẩm Gợi ý Thực tế (Recommended For You) */}
+      {/* Block Sản phẩm Gợi ý (Recommended For You) */}
       {recommendations.length > 0 && (
         <section className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 p-6 md:p-8 rounded-3xl border border-blue-100 shadow-sm space-y-6">
           <div className="flex justify-between items-center">
@@ -137,7 +115,6 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 <span>✨</span> Recommended For You
               </h2>
-
             </div>
             <span className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm">
               Personalized
@@ -188,12 +165,34 @@ export default function Home() {
         </section>
       )}
 
-      {/* Khu vực Tiêu đề & Bộ lọc Danh mục */}
+      {/* Khu vực Featured Products */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Featured Products</h2>
             <p className="text-xs text-gray-500 mt-0.5">Showing {filteredProducts.length} results</p>
+          </div>
+
+          {/* Ô Tìm kiếm: To hơn (md:w-96, py-3) & Nổi bật hơn (shadow-sm, viền rõ ràng) */}
+          <div className="relative w-full md:w-96">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium transition hover:border-gray-400"
+            />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base">
+              🔍
+            </span>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold bg-gray-100 hover:bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center transition"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 

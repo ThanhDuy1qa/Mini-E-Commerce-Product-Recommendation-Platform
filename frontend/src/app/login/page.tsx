@@ -63,7 +63,7 @@ export default function LoginPage() {
           } else {
             window.location.href = "/";
           }
-        }, 30);
+        },10);
       } else {
         setMessage(data.message || "Login failed!");
       }
