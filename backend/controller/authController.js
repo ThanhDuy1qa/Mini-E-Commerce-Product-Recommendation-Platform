@@ -32,7 +32,7 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully.',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     // In lỗi chi tiết ra Terminal
@@ -69,7 +69,7 @@ const login = async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
+      { _id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -78,7 +78,7 @@ const login = async (req, res) => {
       success: true,
       accessToken,
       user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role

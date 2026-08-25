@@ -13,26 +13,30 @@ export interface CartItem {
 
 interface CartContextType {
   cart: CartItem[];
+  isInitialized: boolean;
   addToCart: (product: any, quantity?: number) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   fetchCart: () => Promise<void>;
-  clearCart: () => void;
+  clearCart: () => Promise<void>;
 }
 
 export const CartContext = createContext<CartContextType>({
   cart: [],
+  isInitialized: false,
   addToCart: () => {},
   removeFromCart: () => {},
   updateQuantity: () => {},
   fetchCart: async () => {},
-  clearCart: () => {},
+  clearCart: async () => {},
 });
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Biến cờ đánh dấu đã đọc xong dữ liệu ban đầu
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // 1. Hàm tải giỏ hàng từ DB (nếu đã login) hoặc localStorage (nếu chưa login)
+  // 1. Tải giỏ hàng từ DB hoặc localStorage
   const fetchCart = useCallback(async () => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -47,6 +51,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (e) {
         console.error("Error reading local cart:", e);
+      } finally {
+        setIsInitialized(true); // Đánh dấu nạp xong
       }
       return;
     }
@@ -75,6 +81,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (err) {
       console.error("Failed to fetch cart from server:", err);
+    } finally {
+      setIsInitialized(true); // Đánh dấu nạp xong
     }
   }, []);
 
@@ -82,23 +90,41 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     fetchCart();
   }, [fetchCart]);
 
-  // Đồng bộ giỏ hàng ra localStorage (CHỈ KHI CHƯA ĐĂNG NHẬP)
+  // 2. CHỈ lưu vào localStorage KHI ĐÃ LƯU DỮ LIỆU BAN ĐẦU XONG (isInitialized === true)
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isInitialized && typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       if (!token) {
         localStorage.setItem("mini_cart", JSON.stringify(cart));
       }
     }
-  }, [cart]);
+  }, [cart, isInitialized]);
 
-  // 2. Hàm dọn sạch giỏ hàng local khi Logout
-  const clearCart = () => {
-    setCart([]);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("mini_cart");
+
+const clearCart = async () => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  
+  if (token && cart.length > 0) {
+    try {
+      // Xóa từng item trên DB vì Backend chưa có route DELETE /api/cart
+      await Promise.all(
+        cart.map((item) =>
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${item._id || item.asin}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        )
+      );
+    } catch (err) {
+      console.error("Error clearing backend cart items:", err);
     }
-  };
+  }
+
+  setCart([]);
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("mini_cart");
+  }
+};
 
   const addToCart = async (product: any, quantityToAdd: number = 1) => {
     const productId = product._id || product.asin;
@@ -214,7 +240,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, fetchCart, clearCart }}>
+    <CartContext.Provider value={{ cart, isInitialized, addToCart, removeFromCart, updateQuantity, fetchCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );

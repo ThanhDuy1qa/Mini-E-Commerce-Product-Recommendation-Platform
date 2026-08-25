@@ -46,10 +46,20 @@ const getCart = async (req, res) => {
 };
 
 // POST /api/cart/items - Add product to cart & log interaction
+// POST /api/cart/items - Add product to cart
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
-    const userId = req.user._id;
+    
+    // Kiểm tra và lấy ID linh hoạt từ req.user
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. User ID not found.'
+      });
+    }
 
     if (!productId) {
       return res.status(400).json({
@@ -66,7 +76,6 @@ const addToCart = async (req, res) => {
     }
 
     const parsedQuantity = Number(quantity);
-
     if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
       return res.status(400).json({
         success: false,
@@ -75,7 +84,6 @@ const addToCart = async (req, res) => {
     }
 
     const product = await Product.findById(productId);
-
     if (!product) {
       return res.status(404).json({
         success: false,
@@ -90,13 +98,11 @@ const addToCart = async (req, res) => {
       });
     }
 
-    let cart = await Cart.findOne({
-      user: userId
-    });
+    let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
       cart = new Cart({
-        user: userId,
+        user: userId, // userId chắc chắn đã có giá trị ở đây
         items: []
       });
     }
@@ -125,7 +131,6 @@ const addToCart = async (req, res) => {
 
     await cart.save();
 
-    // LOG INTERACTION: ADD_TO_CART
     logInteraction(userId, product._id, 'add_to_cart');
 
     await cart.populate('items.product');
