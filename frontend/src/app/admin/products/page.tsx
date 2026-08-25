@@ -20,6 +20,7 @@ interface Category {
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showForm, setShowForm] = useState(true);
@@ -38,10 +39,17 @@ export default function AdminProductsPage() {
   // 1. Fetch Products & Categories
   const fetchProducts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/products");
+      // Truyền thêm query limit=1000 để lấy toàn bộ danh sách thay vì mặc định 20
+      const res = await fetch("http://localhost:5000/api/products?limit=1000");
       const data = await res.json();
-      if (Array.isArray(data)) setProducts(data);
-      else if (data.products && Array.isArray(data.products)) setProducts(data.products);
+      
+      if (Array.isArray(data)) {
+        setProducts(data);
+        setTotalProducts(data.length);
+      } else if (data.products && Array.isArray(data.products)) {
+        setProducts(data.products);
+        setTotalProducts(data.total || data.totalProducts || data.products.length);
+      }
     } catch (err) {
       console.error("Failed to fetch products:", err);
     }
@@ -184,7 +192,7 @@ export default function AdminProductsPage() {
           <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">📦</div>
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase">Total Products</p>
-            <p className="text-2xl font-black text-slate-800">{products.length}</p>
+            <p className="text-2xl font-black text-slate-800">{totalProducts || products.length}</p>
           </div>
         </div>
         <div className="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4">

@@ -5,18 +5,20 @@ const { logInteraction } = require('../utils/interactionHelper');
 const getProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const limit = parseInt(req.query.limit) || 100; // Mặc định lấy tối đa 100 sản phẩm
     const skip = (page - 1) * limit;
 
     const { search, category, sort } = req.query;
     let query = {};
 
+    // Tìm kiếm theo tên (không phân biệt hoa/thường)
     if (search) {
       query.name = { $regex: search.trim(), $options: 'i' };
     }
 
-    if (category && category !== 'ALL') {
-      query.category = category;
+    // Lọc theo danh mục (không phân biệt chữ hoa/thường và bỏ qua nếu chọn 'All' / 'ALL')
+    if (category && category.toUpperCase() !== 'ALL') {
+      query.category = { $regex: new RegExp(`^${category.trim()}$`, 'i') };
     }
 
     let sortOptions = { createdAt: -1 };
@@ -36,11 +38,15 @@ const getProducts = async (req, res) => {
       success: true,
       totalProducts,
       currentPage: page,
-      totalPages: Math.ceil(totalProducts / limit),
+      totalPages: Math.ceil(totalProducts / limit) || 1,
       products
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error while fetching products.', error: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error while fetching products.', 
+      error: error.message 
+    });
   }
 };
 
