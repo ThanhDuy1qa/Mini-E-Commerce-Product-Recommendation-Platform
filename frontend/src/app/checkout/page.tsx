@@ -43,16 +43,23 @@ export default function CheckoutPage() {
   const phone = formData.phone.trim();
   const shippingAddress = formData.address.trim();
 
-  if (!phone || !shippingAddress) {
-    alert('Please enter both phone number and shipping address!');
+  // Validate số điện thoại 10 chữ số
+  const phoneRegex = /^0\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    alert('Please enter a valid 10-digit phone number (e.g., 0901234567)!');
+    return;
+  }
+
+  if (!shippingAddress) {
+    alert('Please enter shipping address!');
     return;
   }
 
   setSubmitting(true);
+
   try {
-    // Ép kiểu ID sản phẩm hợp lệ với MongoDB Schema
     const formattedItems = cart.map((item) => ({
-      product: item._id, // Đảm bảo chỉ truyền _id chuẩn của Mongo
+      product: item._id,
       name: item.title || 'Product',
       price: Number(item.price) || 0,
       quantity: Number(item.quantity) || 1,
@@ -84,8 +91,7 @@ export default function CheckoutPage() {
       alert('Order placed successfully!');
       router.push('/orders');
     } else {
-      console.error('Backend error detail:', data);
-      alert(`Order failed: ${data.message || data.error || 'Check backend logs'}`);
+      alert(`Order failed: ${data.message || data.error || 'Server error'}`);
     }
   } catch (err) {
     console.error('Checkout error:', err);
@@ -94,7 +100,6 @@ export default function CheckoutPage() {
     setSubmitting(false);
   }
 };
-
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
       <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
