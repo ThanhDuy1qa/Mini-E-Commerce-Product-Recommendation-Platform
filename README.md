@@ -4,19 +4,25 @@ A full-stack e-commerce web application featuring personalized product recommend
 
 ---
 
-## Tech Stack
+## Project Description
 
-### **Backend**
-* **Language & Runtime:** Node.js, Express.js
-* **Database:** MongoDB (Mongoose ORM)
-* **Authentication:** JSON Web Token (JWT) & Bcrypt
+This platform is a modern e-commerce solution designed to deliver a personalized shopping experience. It tracks user interactions (views, cart additions, and purchases) to recommend relevant products dynamically. The system includes full authentication, a shopping cart, checkout and order processing, and a complete administrative management suite for products, categories, orders, and users.
+
+---
+
+## Technologies (Tech Stack)
+
+### Backend
+* **Runtime & Framework:** Node.js, Express.js
+* **Database & ORM:** MongoDB, Mongoose
+* **Authentication:** JSON Web Token (JWT), Bcrypt.js
 * **API Architecture:** RESTful API
 
-### **Frontend**
+### Frontend
 * **Framework:** Next.js (App Router), React 18+
 * **Language:** TypeScript
 * **Styling:** Tailwind CSS
-* **Icons & Components:** Lucide React
+* **Icons:** Lucide React
 
 ---
 
@@ -26,14 +32,14 @@ A full-stack e-commerce web application featuring personalized product recommend
 * **Authentication:** Secure signup, login, and session persistence via JWT.
 * **Profile Management:** View and update personal profile details, change password.
 * **Product Browsing:** Search, filter, and view products by categories.
-* **Cart & Orders:** Add/update/remove cart items, checkout, and track personal order history.
-* **Personalized Recommendations:** View tailored product recommendations based on integrated algorithms.
+* **Cart & Orders:** Add, update, and remove cart items; checkout and track order history.
+* **Personalized Recommendations:** Dynamic product recommendations based on user interaction history.
 
 ### Admin Features
-* **Category Management:** Full CRUD operations for categories (Name, Description).
-* **Product Management:** Manage product inventory and specifications.
-* **Order Management:** View all system orders and update status (`Pending`, `Shipping`, `Completed`, `Cancelled`).
-* **User Management:** View all accounts and toggle user roles (`0: Customer`, `1: Admin`).
+* **Category Management:** Full CRUD operations for categories.
+* **Product Management:** Manage product catalog, pricing, and stock inventory.
+* **Order Management:** View all customer orders and update status (`Pending`, `Confirmed`, `Completed`, `Cancelled`).
+* **User Management:** View registered accounts and toggle user roles (`0: Customer`, `1: Admin`).
 
 ---
 
@@ -41,60 +47,102 @@ A full-stack e-commerce web application featuring personalized product recommend
 
 ```text
 ├── backend/
-│   ├── config/             # Database connection settings
+│   ├── config/             # Database connection setup
 │   ├── controller/         # Business logic handlers
 │   ├── middleware/         # Auth & Admin authorization middlewares
-│   ├── models/             # Mongoose schemas (User, Product, Order, Category, etc.)
-│   ├── routes/             # API route definitions
-│   ├── utils/
-│   ├── .env.example        # Sample backend environment variables
-│   └── server.js           # Express app entry point
+│   ├── models/             # Mongoose schemas (User, Product, Order, Category, Interaction)
+│   ├── routes/             # REST API route definitions
+│   ├── utils/              # Helper utilities
+│   ├── .env.example        # Backend environment template
+│   └── server.js           # Express application entry point
 │
 ├── frontend/               # Next.js Application
 │   ├── src/
-│   │   ├── app/            # App Router (Pages, Admin dashboard routes)
+│   │   ├── app/            # App Router pages and admin dashboard
 │   │   ├── components/     # Reusable UI components
-│   │   ├── context/        # React Contexts (CartContext, AuthContext)
-│   └── .env.local.example  # Sample frontend environment variables
+│   │   └── context/        # React Contexts (CartContext, AuthContext)
+│   ├── .env.example  # Frontend environment template
+│   └── next.config.ts      # Next.js configuration
 │
 └── README.md
+```
 
-### **Step 1: Clone the Repository**
+---
 
-Open your terminal and run the following command to clone the project:
+## Environment Variables
+
+### 1. Backend (`backend/.env`)
+Create a `.env` file inside the `backend/` directory:
+
+```env
+PORT=5000
+
+# Database Configuration
+# Local MongoDB: mongodb://127.0.0.1:27017/DATN_Ecommerce
+# Cloud Mongo: mongodb+srv://<username>:<password>@cluster.mongodb.net/DATN_Ecommerce
+MONGODB_URI=mongodb://127.0.0.1:27017/ECommerce
+
+# JWT Authentication Config
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRES_IN=7d
+```
+
+### 2. Frontend (`frontend/.env`)
+Create a `.env` file inside the `frontend/` directory:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+---
+
+## Installation
+
+### Step 1: Clone the Repository
+```bash
+git clone https://github.com/ThanhDuy1qa/Mini-E-Commerce-Product-Recommendation-Platform.git
+cd Mini-E-Commerce-Product-Recommendation-Platform
+```
+
+### Step 2: Install Backend Dependencies
+```bash
+cd backend
+npm install
+```
+
+### Step 3: Install Frontend Dependencies
+```bash
+cd ../frontend
+npm install
+```
+
+---
+
+## Run Frontend / Backend
+
+### Running the Backend
+
+Navigate to the `backend/` directory and execute:
 
 ```bash
-git clone [https://github.com/ThanhDuy1qa/Mini-E-Commerce-Product-Recommendation-Platform.git](https://github.com/ThanhDuy1qa/Mini-E-Commerce-Product-Recommendation-Platform.git)
-cd Mini-E-Commerce-Product-Recommendation-Platform
-
-### **Step 2: Backend Setup**
-1. Navigate to the backend directory:
-cd backend
-
-2. Install the necessary dependencies:
-npm install
-
-3. Create a .env file in the root of the backend/ directory:
-PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/ecommerce_db
-JWT_SECRET=your_super_secret_jwt_key
-
-4. Start the backend development server:
-Open a new terminal tab/window and navigate to the backend
-
-# Development mode with Nodemon
+# Development mode with auto-reload (Nodemon)
 npm run dev
 
 # Standard Node execution
-node server.js
+npm start
+```
+The backend server will run at `http://localhost:5000`.
 
-### **Step 2: Backend Setup**
-1. Open a new terminal tab/window and navigate to the frontend directory:
-cd frontend
+### Running the Frontend
 
-2. Install the frontend dependencies:
-npm install
+Open a new terminal, navigate to the `frontend/` directory, and execute:
 
-3. Launch the Next.js development server:
+```bash
+# Development mode
 npm run dev
 
+# Production build and start
+npm run build
+npm start
+```
+The frontend application will be accessible at `http://localhost:3000`.
