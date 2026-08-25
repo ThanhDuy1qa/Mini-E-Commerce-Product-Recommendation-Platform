@@ -20,6 +20,14 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number. It must be exactly 10 digits starting with 0.'
+      });
+    }
+
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
     // Cart does not exist or is empty

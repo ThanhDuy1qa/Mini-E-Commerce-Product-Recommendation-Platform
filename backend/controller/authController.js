@@ -11,6 +11,13 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, email, and password.' });
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long, with at least 1 uppercase and 1 lowercase letter.'
+      });
+    }
     const formattedEmail = email.toLowerCase().trim();
 
     // Kiểm tra Email đã tồn tại chưa
