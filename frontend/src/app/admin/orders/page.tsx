@@ -30,7 +30,7 @@ export default function AdminOrdersPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/orders", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -70,7 +70,7 @@ export default function AdminOrdersPage() {
     setUpdatingId(orderId);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -22,7 +22,7 @@ export default function UsersManagementPage() {
     setErrorMsg("");
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ export default function UsersManagementPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/users/${user._id}/role`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${user._id}/role`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export default function UsersManagementPage() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/users/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

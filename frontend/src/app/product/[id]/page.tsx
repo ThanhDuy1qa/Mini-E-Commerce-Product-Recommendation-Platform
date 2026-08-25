@@ -35,7 +35,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     }
 
     // 2. Gửi kèm Header Authorization để Backend nhận diện người dùng
-    fetch(`http://localhost:5000/api/products/${resolvedParams.id}`, { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${resolvedParams.id}`, { headers })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {

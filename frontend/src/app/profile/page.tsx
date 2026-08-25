@@ -36,7 +36,7 @@ export default function ProfilePage() {
       const token = user?.token || localStorage.getItem("token");
 
       // Make sure this URL matches your backend setup exactly!
-      const response = await fetch("http://localhost:5000/api/users/profile", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
