@@ -20,7 +20,7 @@ export default function AdminCategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`);
       const data = await res.json();
       if (Array.isArray(data)) setCategories(data);
       else if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
@@ -55,8 +55,8 @@ export default function AdminCategoriesPage() {
       const token = localStorage.getItem("token");
       const isEdit = Boolean(editingId);
       const url = isEdit
-        ? `http://localhost:5000/api/categories/${editingId}`
-        : "http://localhost:5000/api/categories";
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/categories/${editingId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/categories`;
 
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
@@ -85,7 +85,7 @@ export default function AdminCategoriesPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/categories/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -52,7 +52,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/cart", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -108,7 +108,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (token) {
       try {
-        await fetch("http://localhost:5000/api/cart/items", {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -165,7 +165,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (token) {
       try {
-        await fetch(`http://localhost:5000/api/cart/items/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -199,7 +199,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (token) {
       try {
-        await fetch(`http://localhost:5000/api/cart/items/${id}`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

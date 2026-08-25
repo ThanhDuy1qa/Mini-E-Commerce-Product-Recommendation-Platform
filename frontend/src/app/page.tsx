@@ -41,7 +41,7 @@ export default function Home() {
     }
 
     // 1. Gọi API Gợi ý thật từ Backend
-    fetch("http://localhost:5000/api/recommendations", { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch recommendations");
         return res.json();
@@ -58,7 +58,7 @@ export default function Home() {
       });
 
     // 2. Gọi API lấy tất cả sản phẩm
-    fetch("http://localhost:5000/api/products")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.success) {
@@ -71,7 +71,7 @@ export default function Home() {
       .finally(() => setIsLoading(false));
 
     // 3. Gọi API lấy danh mục
-    fetch("http://localhost:5000/api/categories")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && Array.isArray(data.categories)) {

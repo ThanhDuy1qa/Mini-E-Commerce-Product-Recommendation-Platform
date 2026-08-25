@@ -13,7 +13,7 @@ export default function RecommendationSection() {
         const token = localStorage.getItem('token');
         if (!token) return;
 
-        const res = await fetch('http://localhost:5000/api/recommendations/me', {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendations/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
