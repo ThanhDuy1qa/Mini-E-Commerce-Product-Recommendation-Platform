@@ -20,32 +20,37 @@ const register = async (req, res) => {
     }
     const formattedEmail = email.toLowerCase().trim();
 
-    // Kiểm tra Email đã tồn tại chưa
+    // Check if Email already exists
     const existingUser = await User.findOne({ email: formattedEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email address is already registered.' });
     }
 
-    // Hash mật khẩu
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Tạo user mới
+
+    // Create new user (default status is Active)
     const user = await User.create({
       name,
       email: formattedEmail,
-      password: hashedPassword
+      password: hashedPassword,
+      status: 'Active'
     });
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully.',
-      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { 
+        _id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        status: user.status 
+      }
     });
   } catch (error) {
-    // In lỗi chi tiết ra Terminal
     console.error("❌ Register Error Details:", error);
 
-    // Nếu Mongoose báo lỗi trùng E11000 (Duplicate Email)
     if (error.code === 11000) {
       return res.status(400).json({ success: false, message: 'Email address is already registered.' });
     }
@@ -75,6 +80,14 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
+    // 🔴 BLOCK LOGIN IF ACCOUNT STATUS IS BLOCKED
+    if (user.status === 'Blocked') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been blocked. Please contact support.'
+      });
+    }
+
     const accessToken = jwt.sign(
       { _id: user._id, role: user.role },
       process.env.JWT_SECRET,
@@ -88,7 +101,8 @@ const login = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        status: user.status
       }
     });
   } catch (error) {
