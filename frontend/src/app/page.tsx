@@ -57,12 +57,13 @@ export default function Home() {
         setRecommendations([]);
       });
 
+
     // 2. Gọi API lấy tất cả sản phẩm
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products?limit=100`)
       .then((res) => res.json())
       .then((data) => {
-        if (data?.success) {
-          setProducts(data.products || []);
+        if (data?.success && Array.isArray(data.products)) {
+          setProducts(data.products);
         } else if (Array.isArray(data)) {
           setProducts(data);
         }
@@ -87,13 +88,16 @@ export default function Home() {
       .catch((err) => console.error("Error fetching categories:", err));
   }, []);
 
-  // Lọc sản phẩm theo từ khóa tìm kiếm và danh mục
+  // Lọc sản phẩm theo từ khóa tìm kiếm và danh mục (Không phân biệt hoa/thường)
   const filteredProducts = products.filter((product) => {
-    const productName = product.name || product.title || "";
-    const productCategory = product.category || product.main_cat || "";
+    const productName = (product.name || product.title || "").toLowerCase();
+    const productCategory = (product.category || product.main_cat || "").toLowerCase();
 
-    const matchesSearch = productName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || productCategory === selectedCategory;
+    const matchesSearch = productName.includes(searchTerm.toLowerCase().trim());
+    const matchesCategory =
+      selectedCategory.toUpperCase() === "ALL" ||
+      productCategory === selectedCategory.toLowerCase();
+
     return matchesSearch && matchesCategory;
   });
 
@@ -173,7 +177,7 @@ export default function Home() {
             <p className="text-xs text-gray-500 mt-0.5">Showing {filteredProducts.length} results</p>
           </div>
 
-          {/* Ô Tìm kiếm: To hơn (md:w-96, py-3) & Nổi bật hơn (shadow-sm, viền rõ ràng) */}
+          {/* Ô Tìm kiếm */}
           <div className="relative w-full md:w-96">
             <input
               type="text"
