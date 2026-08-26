@@ -11,6 +11,13 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide name, email, and password.' });
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long, with at least 1 uppercase and 1 lowercase letter.'
+      });
+    }
     const formattedEmail = email.toLowerCase().trim();
 
     // Kiểm tra Email đã tồn tại chưa
@@ -32,7 +39,7 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'User registered successfully.',
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (error) {
     // In lỗi chi tiết ra Terminal
@@ -69,7 +76,7 @@ const login = async (req, res) => {
     }
 
     const accessToken = jwt.sign(
-      { id: user._id, role: user.role },
+      { _id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -78,7 +85,7 @@ const login = async (req, res) => {
       success: true,
       accessToken,
       user: {
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role

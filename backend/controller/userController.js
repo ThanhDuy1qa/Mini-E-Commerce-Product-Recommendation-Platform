@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 // 1. Lấy thông tin cá nhân của người dùng đang đăng nhập
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user?.id || req.user?._id;
+    const userId = req.user?._id;
     const user = await User.findById(userId).select('-password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found in database.' });
@@ -19,7 +19,7 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { name } = req.body;
-    const userId = req.user?.id || req.user?._id;
+    const userId = req.user?._id;
 
     const user = await User.findById(userId);
     if (!user) {
@@ -49,7 +49,7 @@ const updateProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user?.id || req.user?._id;
+    const userId = req.user?._id;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Please provide both current and new passwords.' });

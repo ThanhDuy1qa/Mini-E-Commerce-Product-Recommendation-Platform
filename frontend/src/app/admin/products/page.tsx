@@ -39,8 +39,8 @@ export default function AdminProductsPage() {
   // 1. Fetch Products & Categories
   const fetchProducts = async () => {
     try {
-      // Truyền thêm query limit=1000 để lấy toàn bộ danh sách thay vì mặc định 20
-      const res = await fetch("http://localhost:5000/api/products?limit=1000");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products?limit=1000`);
       const data = await res.json();
       
       if (Array.isArray(data)) {
@@ -57,7 +57,7 @@ export default function AdminProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categories");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`);
       const data = await res.json();
       if (Array.isArray(data)) setCategories(data);
       else if (data.categories && Array.isArray(data.categories)) setCategories(data.categories);
@@ -108,8 +108,8 @@ export default function AdminProductsPage() {
       const token = localStorage.getItem("token");
       const isEdit = Boolean(editingId);
       const url = isEdit
-        ? `http://localhost:5000/api/products/${editingId}`
-        : "http://localhost:5000/api/products";
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/products/${editingId}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/products`;
 
       const res = await fetch(url, {
         method: isEdit ? "PUT" : "POST",
@@ -145,7 +145,7 @@ export default function AdminProductsPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

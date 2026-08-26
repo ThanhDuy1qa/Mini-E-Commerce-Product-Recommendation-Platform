@@ -24,77 +24,82 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  
   const handleSubmitOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (cart.length === 0) {
-      alert('Your cart is empty!');
-      return;
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please log in to complete your order!');
+    router.push('/login');
+    return;
+  }
+
+  if (cart.length === 0) {
+    alert('Your cart is empty!');
+    return;
+  }
+
+  const phone = formData.phone.trim();
+  const shippingAddress = formData.address.trim();
+
+  // Validate số điện thoại 10 chữ số
+  const phoneRegex = /^0\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    alert('Please enter a valid 10-digit phone number (e.g., 0901234567)!');
+    return;
+  }
+
+  if (!shippingAddress) {
+    alert('Please enter shipping address!');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    const formattedItems = cart.map((item) => ({
+      product: item._id,
+      name: item.title || 'Product',
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+      image_url: item.image_url || ''
+    }));
+
+    const payload = {
+      phone,
+      shippingAddress,
+      fullName: formData.fullName.trim(),
+      paymentMethod: formData.paymentMethod,
+      products: formattedItems,
+      totalPrice: subtotal
+    };
+
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      await clearCart();
+      alert('Order placed successfully!');
+      router.push('/orders');
+    } else {
+      alert(`Order failed: ${data.message || data.error || 'Server error'}`);
     }
-
-    // Validate dữ liệu bắt buộc trước khi gửi
-    const phone = formData.phone.trim();
-    const shippingAddress = formData.address.trim();
-
-    if (!phone || !shippingAddress) {
-      alert('Please enter both phone number and shipping address!');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const token = localStorage.getItem('token');
-
-      const formattedItems = cart.map((item) => ({
-        product: item._id || item.asin,
-        name: item.title || 'Product',
-        price: Number(item.price) || 0,
-        quantity: Number(item.quantity) || 1,
-        image_url: item.image_url || ''
-      }));
-
-      // Payload truyền trực tiếp phone & shippingAddress chuẩn kiểu String
-      const payload = {
-        phone: phone,
-        shippingAddress: shippingAddress,
-        fullName: formData.fullName.trim(),
-        paymentMethod: formData.paymentMethod,
-        products: formattedItems,
-        totalPrice: subtotal
-      };
-
-      const res = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        if (clearCart) {
-          await clearCart();
-        } else {
-          localStorage.removeItem('mini_cart');
-        }
-
-        alert('Order placed successfully!');
-        router.push('/orders');
-      } else {
-        console.error('Backend rejected order:', data);
-        alert(`Order failed: ${data.message || data.error || 'Server error'}`);
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      alert('Unable to connect to server!');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+  } catch (err) {
+    console.error('Checkout error:', err);
+    alert('Unable to connect to server!');
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
       <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -108,7 +113,7 @@ export default function CheckoutPage() {
               required
               value={formData.fullName}
               onChange={handleInputChange}
-              placeholder="Khách hàng #0"
+              placeholder="Your Name"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
@@ -121,7 +126,7 @@ export default function CheckoutPage() {
               required
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="0901234567"
+              placeholder="Your phone number"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
@@ -134,7 +139,7 @@ export default function CheckoutPage() {
               required
               value={formData.address}
               onChange={handleInputChange}
-              placeholder="123 Vo Van Ngan, Thu Duc"
+              placeholder="Your Address"
               className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>

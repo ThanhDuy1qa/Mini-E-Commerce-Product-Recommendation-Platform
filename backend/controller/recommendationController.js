@@ -28,7 +28,7 @@ const getPopularProductIds = async (limit, excludeProductIds = []) => {
 const getMyRecommendations = async (req, res) => {
   try {
     // 1. Kiểm tra an toàn người dùng (undefined nếu chưa đăng nhập)
-    const userId = req.user?.id || req.user?._id; 
+    const userId = req.user?._id; 
     const LIMIT = 5;
 
     let recommendedProducts = [];

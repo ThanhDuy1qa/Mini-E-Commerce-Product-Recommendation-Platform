@@ -40,8 +40,8 @@ export default function Home() {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // 1. Gọi API Gợi ý từ Backend
-    fetch("http://localhost:5000/api/recommendations", { headers })
+    // 1. Gọi API Gợi ý thật từ Backend
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/recommendations`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch recommendations");
         return res.json();
@@ -57,8 +57,9 @@ export default function Home() {
         setRecommendations([]);
       });
 
-    // 2. Gọi API lấy tất cả sản phẩm (Truyền ?limit=100 để lấy trọn vẹn 40 sản phẩm)
-    fetch("http://localhost:5000/api/products?limit=100")
+
+    // 2. Gọi API lấy tất cả sản phẩm
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products?limit=100`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && Array.isArray(data.products)) {
@@ -71,7 +72,7 @@ export default function Home() {
       .finally(() => setIsLoading(false));
 
     // 3. Gọi API lấy danh mục
-    fetch("http://localhost:5000/api/categories")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && Array.isArray(data.categories)) {
