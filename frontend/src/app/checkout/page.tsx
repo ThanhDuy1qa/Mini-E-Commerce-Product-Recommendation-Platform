@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 
-export default function CheckoutPage() {
+function CheckoutForm() {
   const router = useRouter();
-  const { cart, clearCart } = useCart(); 
+  const searchParams = useSearchParams();
+  const { cart, clearCart, removeFromCart } = useCart();
   const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -16,7 +17,21 @@ export default function CheckoutPage() {
     paymentMethod: 'COD',
   });
 
-  const subtotal = cart.reduce((acc, item) => {
+  // 1. Lấy danh sách ID sản phẩm được tick chọn từ URL parameter
+  const selectedParam = searchParams.get('selected');
+  const selectedIds = selectedParam ? selectedParam.split(',') : [];
+
+  // 2. Lọc ra các sản phẩm thực sự được chọn trong giỏ hàng
+  const checkoutItems = cart.filter((item) => {
+    const id = item._id || item.asin;
+    return id && selectedIds.includes(id);
+  });
+
+  // Nếu có truyền parameter `selected` thì chỉ hiển thị sản phẩm được chọn, ngược lại hiển thị cả giỏ
+  const displayItems = selectedIds.length > 0 ? checkoutItems : cart;
+
+  // 3. Tính tổng tiền dựa trên danh sách sản phẩm hiển thị
+  const subtotal = displayItems.reduce((acc, item) => {
     return acc + (item.price || 0) * (item.quantity || 1);
   }, 0);
 
@@ -24,84 +39,95 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  
   const handleSubmitOrder = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const token = localStorage.getItem('token');
-  if (!token) {
-    alert('Please log in to complete your order!');
-    router.push('/login');
-    return;
-  }
-
-  if (cart.length === 0) {
-    alert('Your cart is empty!');
-    return;
-  }
-
-  const phone = formData.phone.trim();
-  const shippingAddress = formData.address.trim();
-
-  // Validate số điện thoại 10 chữ số
-  const phoneRegex = /^0\d{9}$/;
-  if (!phoneRegex.test(phone)) {
-    alert('Please enter a valid 10-digit phone number (e.g., 0901234567)!');
-    return;
-  }
-
-  if (!shippingAddress) {
-    alert('Please enter shipping address!');
-    return;
-  }
-
-  setSubmitting(true);
-
-  try {
-    const formattedItems = cart.map((item) => ({
-      product: item._id,
-      name: item.title || 'Product',
-      price: Number(item.price) || 0,
-      quantity: Number(item.quantity) || 1,
-      image_url: item.image_url || ''
-    }));
-
-    const payload = {
-      phone,
-      shippingAddress,
-      fullName: formData.fullName.trim(),
-      paymentMethod: formData.paymentMethod,
-      products: formattedItems,
-      totalPrice: subtotal
-    };
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      await clearCart();
-      alert('Order placed successfully!');
-      router.push('/orders');
-    } else {
-      alert(`Order failed: ${data.message || data.error || 'Server error'}`);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please log in to complete your order!');
+      router.push('/login');
+      return;
     }
-  } catch (err) {
-    console.error('Checkout error:', err);
-    alert('Unable to connect to server!');
-  } finally {
-    setSubmitting(false);
-  }
-};
+
+    if (displayItems.length === 0) {
+      alert('No products selected for checkout!');
+      return;
+    }
+
+    const phone = formData.phone.trim();
+    const shippingAddress = formData.address.trim();
+
+    // Validate số điện thoại 10 chữ số
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      alert('Please enter a valid 10-digit phone number (e.g., 0901234567)!');
+      return;
+    }
+
+    if (!shippingAddress) {
+      alert('Please enter shipping address!');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Chuẩn hóa danh sách sản phẩm gửi lên Backend
+      const formattedItems = displayItems.map((item) => ({
+        product: item._id || item.asin,
+        name: item.title || 'Product',
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        image_url: item.image_url || '',
+      }));
+
+      const payload = {
+        phone,
+        shippingAddress,
+        fullName: formData.fullName.trim(),
+        paymentMethod: formData.paymentMethod,
+        products: formattedItems,
+        totalPrice: subtotal,
+      };
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Nếu mua toàn bộ giỏ hàng -> xóa hết; nếu mua một phần -> chỉ xóa sản phẩm đã mua
+        if (displayItems.length === cart.length) {
+          await clearCart();
+        } else if (typeof removeFromCart === 'function') {
+          for (const item of displayItems) {
+            const id = item._id || item.asin;
+            if (id) await removeFromCart(id);
+          }
+        }
+
+        alert('Order placed successfully!');
+        router.push('/orders');
+      } else {
+        alert(`Order failed: ${data.message || data.error || 'Server error'}`);
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      alert('Unable to connect to server!');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* Cột trái: Thông tin giao hàng */}
       <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-2xl font-bold mb-6 text-gray-800">Shipping Information</h2>
         <form onSubmit={handleSubmitOrder} className="space-y-4">
@@ -159,7 +185,7 @@ export default function CheckoutPage() {
 
           <button
             type="submit"
-            disabled={submitting || cart.length === 0}
+            disabled={submitting || displayItems.length === 0}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition duration-200 mt-6 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? 'Processing...' : `Place Order ($${subtotal.toFixed(2)})`}
@@ -167,15 +193,16 @@ export default function CheckoutPage() {
         </form>
       </div>
 
+      {/* Cột phải: Tóm tắt đơn hàng */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
         <h3 className="text-xl font-bold mb-4 text-gray-800">Order Summary</h3>
 
-        {cart.length === 0 ? (
-          <p className="text-gray-500 py-4 text-center">Your cart is empty.</p>
+        {displayItems.length === 0 ? (
+          <p className="text-gray-500 py-4 text-center">No products selected for checkout.</p>
         ) : (
           <div className="divide-y divide-gray-100 mb-4 max-h-80 overflow-y-auto pr-1">
-            {cart.map((item, index) => (
-              <div key={item._id || index} className="py-3 flex items-center justify-between gap-3">
+            {displayItems.map((item, index) => (
+              <div key={item._id || item.asin || index} className="py-3 flex items-center justify-between gap-3">
                 {item.image_url && (
                   <img
                     src={item.image_url}
@@ -186,11 +213,11 @@ export default function CheckoutPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-800 text-sm truncate">{item.title}</p>
                   <p className="text-xs text-gray-500">
-                    Qty: {item.quantity} × ${(item.price).toFixed(2)}
+                    Qty: {item.quantity || 1} × ${(Number(item.price) || 0).toFixed(2)}
                   </p>
                 </div>
                 <p className="font-semibold text-gray-900 text-sm">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                 </p>
               </div>
             ))}
@@ -213,5 +240,20 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Bọc Component bằng Suspense để tránh lỗi Render SSR khi dùng useSearchParams trong Next.js App Router
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center text-gray-500 font-medium">
+          Loading checkout...
+        </div>
+      }
+    >
+      <CheckoutForm />
+    </Suspense>
   );
 }

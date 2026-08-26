@@ -8,10 +8,10 @@ const { logInteraction } = require('../utils/interactionHelper');
 // Create an order from the current user's cart
 const createOrder = async (req, res) => {
   try {
-    const userId =  req.user._id;
+    const userId = req.user._id;
 
-    // 1. Nhận phone và shippingAddress từ request body gửi lên từ Frontend
-    const { phone, shippingAddress } = req.body;
+    // 1. Nhận thông tin từ Frontend (bao gồm cả mảng products được chọn)
+    const { phone, shippingAddress, products: selectedProducts } = req.body;
 
     if (!phone || !shippingAddress) {
       return res.status(400).json({
@@ -30,7 +30,6 @@ const createOrder = async (req, res) => {
 
     const cart = await Cart.findOne({ user: userId }).populate('items.product');
 
-    // Cart does not exist or is empty
     if (!cart || !cart.items || cart.items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -38,11 +37,29 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // 2. Lọc chỉ lấy những sản phẩm người dùng chọn thanh toán
+    let itemsToOrder = cart.items;
+
+    if (Array.isArray(selectedProducts) && selectedProducts.length > 0) {
+      const selectedIds = selectedProducts.map((p) => (p.product || p._id || p.asin)?.toString());
+      itemsToOrder = cart.items.filter(
+        (item) => item.product && selectedIds.includes(item.product._id.toString())
+      );
+    }
+
+    if (itemsToOrder.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No matching products found in cart for checkout.'
+      });
+    }
+
     const orderProducts = [];
     let totalPrice = 0;
+    const orderedProductIds = [];
 
-    // Validate every product before creating the order
-    for (const item of cart.items) {
+    // 3. Tính tiền và kiểm tra tồn kho CHỈ CHO CÁC SẢN PHẨM ĐƯỢC CHỌN
+    for (const item of itemsToOrder) {
       const product = item.product;
 
       if (!product) {
@@ -77,9 +94,10 @@ const createOrder = async (req, res) => {
       });
 
       totalPrice += product.price * item.quantity;
+      orderedProductIds.push(product._id.toString());
     }
 
-    // 2. Lưu order kèm phone và shippingAddress vào Database
+    // 4. Tạo đơn hàng với đúng các sản phẩm được chọn
     const order = await Order.create({
       user: userId,
       products: orderProducts,
@@ -89,8 +107,8 @@ const createOrder = async (req, res) => {
       status: 'Pending'
     });
 
-    // Reduce product stock and log purchase interactions
-    for (const item of cart.items) {
+    // 5. Trừ kho và log tương tác
+    for (const item of itemsToOrder) {
       if (item.product && item.product._id) {
         await Product.findByIdAndUpdate(item.product._id, {
           $inc: { stock: -item.quantity }
@@ -99,8 +117,10 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Clear cart after successful checkout
-    cart.items = [];
+    // 6. CHỈ XÓA các sản phẩm đã đặt khỏi giỏ hàng (giữ lại các sản phẩm chưa tick chọn)
+    cart.items = cart.items.filter(
+      (item) => item.product && !orderedProductIds.includes(item.product._id.toString())
+    );
     await cart.save();
 
     res.status(201).json({
