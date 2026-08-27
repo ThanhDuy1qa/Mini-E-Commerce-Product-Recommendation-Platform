@@ -7,10 +7,11 @@ const {
   changePassword,
   getAllUsers,
   updateUserRole,
+  updateUserStatus, 
   deleteUser
 } = require('../controller/userController');
 
-// Import middleware
+// Import middlewares
 const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
 // =========================
@@ -25,6 +26,7 @@ router.put('/change-password', verifyToken, changePassword);
 // =========================
 router.get('/', verifyAdmin, getAllUsers);
 router.put('/:id/role', verifyAdmin, updateUserRole);
+router.put('/:id/status', verifyAdmin, updateUserStatus); // Update user status (Active/Blocked)
 router.delete('/:id', verifyAdmin, deleteUser);
 
 module.exports = router;

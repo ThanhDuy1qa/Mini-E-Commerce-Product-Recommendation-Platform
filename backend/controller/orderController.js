@@ -141,7 +141,7 @@ const createOrder = async (req, res) => {
 // Get order history of current user
 const getMyOrders = async (req, res) => {
   try {
-    const userId =  req.user._id;
+    const userId = req.user._id;
     const orders = await Order.find({ user: userId })
       .populate('products.product')
       .sort({ createdAt: -1 });
@@ -213,7 +213,7 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-// UPDATE ORDER STATUS FOR ADMIN
+// UPDATE ORDER STATUS FOR ADMIN (Đã tối ưu chỉ cập nhật field status)
 const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -231,21 +231,23 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    // Cập nhật trực tiếp trường status và bỏ qua validation các trường cũ
+    const updatedOrder = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { returnDocument: 'after', runValidators: false }
+    );
 
-    if (!order) {
+    if (!updatedOrder) {
       return res.status(404).json({
         message: "Order not found"
       });
     }
 
-    order.status = status;
-    await order.save();
-
     res.status(200).json({
       success: true,
       message: "Order status updated",
-      order
+      order: updatedOrder
     });
   } catch (error) {
     res.status(500).json({

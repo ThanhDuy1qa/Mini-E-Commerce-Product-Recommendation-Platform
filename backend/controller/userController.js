@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 
-// 1. Lấy thông tin cá nhân của người dùng đang đăng nhập
+// 1. Get current logged-in user profile
 const getProfile = async (req, res) => {
   try {
     const userId = req.user?._id;
@@ -15,7 +15,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-// 2. Cập nhật thông tin cá nhân
+// 2. Update user profile
 const updateProfile = async (req, res) => {
   try {
     const { name } = req.body;
@@ -45,7 +45,7 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// 3. Đổi mật khẩu
+// 3. Change password
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -76,7 +76,7 @@ const changePassword = async (req, res) => {
 
 // ==================== ADMIN CONTROLLERS ====================
 
-// 4. Lấy danh sách tất cả người dùng (Chỉ dành cho Admin)
+// 4. Get all users (Admin only)
 const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-password').sort({ createdAt: -1 });
@@ -86,7 +86,7 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// 5. Cập nhật phân quyền người dùng (Chỉ dành cho Admin: 0 - Customer, 1 - Admin)
+// 5. Update user role (Admin only: 0 - Customer, 1 - Admin)
 const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
@@ -111,7 +111,35 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-// 6. Xóa người dùng (Chỉ dành cho Admin)
+// 6. Update user status (Admin only: Active / Blocked)
+const updateUserStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!status || !['Active', 'Blocked'].includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid status value. Allowed values: Active, Blocked.' 
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    res.json({ success: true, message: 'User status updated successfully.', user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// 7. Delete user (Admin only)
 const deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
@@ -130,5 +158,6 @@ module.exports = {
   changePassword,
   getAllUsers,
   updateUserRole,
+  updateUserStatus,
   deleteUser
 };
