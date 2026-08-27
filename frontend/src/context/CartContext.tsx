@@ -167,6 +167,7 @@ const clearCart = async () => {
             return {
               ...item,
               quantity: (item.quantity || 1) + quantityToAdd,
+              stock: product.stock ?? item.stock ?? 0,
             };
           }
           return item;
@@ -182,6 +183,7 @@ const clearCart = async () => {
           price: Number(product.price || 0),
           image_url: product.image_url || product.image || "",
           quantity: quantityToAdd,
+          stock: product.stock ?? 0,
         },
       ];
     });

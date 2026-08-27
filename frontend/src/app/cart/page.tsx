@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { useCart } from "../../context/CartContext";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 👈 Thêm useEffect
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity } = useCart();
+  const { cart, removeFromCart, updateQuantity, fetchCart } = useCart(); // 👈 Lấy thêm fetchCart
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+
+  // Tự động làm mới giỏ hàng và số lượng stock khi vừa mở trang Cart
+  useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   // Lấy ID chuẩn cho sản phẩm (ưu tiên _id từ MongoDB)
   const getItemId = (item: any) => item._id || item.asin;
