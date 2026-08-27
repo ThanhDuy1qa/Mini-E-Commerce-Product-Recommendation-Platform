@@ -83,6 +83,13 @@ const addToCart = async (req, res) => {
       });
     }
 
+    if (product.stock < parsedQuantity) {
+  return res.status(400).json({
+    success: false,
+    message: 'Insufficient product stock.'
+  });
+}
+
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({
@@ -189,6 +196,7 @@ const updateCartItem = async (req, res) => {
         message: 'Requested quantity exceeds available stock.'
       });
     }
+
 
     const cart = await Cart.findOne({
       user: req.user._id

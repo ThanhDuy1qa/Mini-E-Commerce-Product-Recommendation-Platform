@@ -9,6 +9,7 @@ export interface CartItem {
   price: number;
   image_url: string;
   quantity: number;
+  stock?: number;
 }
 
 interface CartContextType {
@@ -67,15 +68,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.success && data.cart && data.cart.items) {
         const formattedCart: CartItem[] = data.cart.items
-          .filter((item: any) => item.product)
-          .map((item: any) => ({
-            _id: item.product._id,
-            asin: item.product.asin || item.product._id,
-            title: item.product.title || item.product.name || "Product",
-            price: Number(item.product.price || 0),
-            image_url: item.product.image_url || item.product.image || "",
-            quantity: item.quantity,
-          }));
+        .filter((item: any) => item.product)
+        .map((item: any) => ({
+          _id: item.product._id,
+          asin: item.product.asin || item.product._id,
+          title: item.product.title || item.product.name || "Product",
+          price: Number(item.product.price || 0),
+          image_url: item.product.image_url || item.product.image || "",
+          quantity: item.quantity,
+          stock: item.product.stock ?? 0, 
+        }));
 
         setCart(formattedCart);
       }
@@ -143,6 +145,7 @@ const clearCart = async () => {
           body: JSON.stringify({
             productId: productId,
             quantity: quantityToAdd,
+            stock: product.stock ?? 0,
           }),
         });
       } catch (err) {
@@ -210,34 +213,49 @@ const clearCart = async () => {
   };
 
   const updateQuantity = async (id: string, delta: number) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    let newQty = 1;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const targetItem = cart.find((item) => (item._id || item.asin) === id);
+  if (!targetItem) return;
 
-    setCart((prev) => {
-      return (Array.isArray(prev) ? prev : []).map((item) => {
-        if ((item._id || item.asin) === id) {
-          newQty = Math.max(1, (item.quantity || 1) + delta);
-          return { ...item, quantity: newQty };
-        }
-        return item;
+  const newQty = (targetItem.quantity || 1) + delta;
+
+  // Chặn ngay ở Frontend nếu số lượng vượt tồn kho
+  if (targetItem.stock !== undefined && newQty > targetItem.stock) {
+    alert(`Cannot add more. Available stock: ${targetItem.stock}`);
+    return;
+  }
+
+  if (newQty < 1) return;
+
+  if (token) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quantity: newQty }),
       });
-    });
 
-    if (token) {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ quantity: newQty }),
-        });
-      } catch (err) {
-        console.error("Error updating cart item on server:", err);
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.message || "Failed to update quantity");
+        fetchCart(); // Revert lại giỏ hàng cũ từ DB[cite: 22, 23]
+        return;
       }
+    } catch (err) {
+      console.error("Error updating cart item on server:", err);
+      return;
     }
-  };
+  }
+
+  setCart((prev) =>
+    (Array.isArray(prev) ? prev : []).map((item) =>
+      (item._id || item.asin) === id ? { ...item, quantity: newQty } : item
+    )
+  );
+};
 
   return (
     <CartContext.Provider value={{ cart, isInitialized, addToCart, removeFromCart, updateQuantity, fetchCart, clearCart }}>
