@@ -44,14 +44,11 @@ const getCart = async (req, res) => {
     });
   }
 };
-
-// POST /api/cart/items - Add product to cart & log interaction
 // POST /api/cart/items - Add product to cart
 const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
     
-    // Kiểm tra và lấy ID linh hoạt từ req.user
     const userId = req.user?._id;
 
     if (!userId) {
@@ -83,13 +80,7 @@ const addToCart = async (req, res) => {
       });
     }
 
-    if (product.stock < parsedQuantity) {
-  return res.status(400).json({
-    success: false,
-    message: 'Insufficient product stock.'
-  });
-}
-
+    // 1. Tìm sản phẩm trong DB trước
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({
@@ -98,6 +89,7 @@ const addToCart = async (req, res) => {
       });
     }
 
+    // 2. Kiểm tra tồn kho sau khi đã lấy được thông tin product
     if (product.stock < parsedQuantity) {
       return res.status(400).json({
         success: false,
@@ -109,7 +101,7 @@ const addToCart = async (req, res) => {
 
     if (!cart) {
       cart = new Cart({
-        user: userId, // userId chắc chắn đã có giá trị ở đây
+        user: userId,
         items: []
       });
     }
