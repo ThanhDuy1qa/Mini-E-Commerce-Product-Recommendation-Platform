@@ -69,34 +69,7 @@ This platform is a modern e-commerce solution designed to deliver a personalized
 
 ---
 
-## Environment Variables
-
-### 1. Backend (`backend/.env`)
-Create a `.env` file inside the `backend/` directory:
-
-```env
-PORT=5000
-
-# Database Configuration
-# Local MongoDB: mongodb://127.0.0.1:27017/DATN_Ecommerce
-# Cloud Mongo: mongodb+srv://<username>:<password>@cluster.mongodb.net/DATN_Ecommerce
-MONGODB_URI=mongodb://127.0.0.1:27017/ECommerce
-
-# JWT Authentication Config
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRES_IN=7d
-```
-
-### 2. Frontend (`frontend/.env`)
-Create a `.env` file inside the `frontend/` directory:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
-```
-
----
-
-## Installation
+## Installation & Environment Setup
 
 ### Step 1: Clone the Repository
 ```bash
@@ -104,38 +77,57 @@ git clone https://github.com/ThanhDuy1qa/Mini-E-Commerce-Product-Recommendation-
 cd Mini-E-Commerce-Product-Recommendation-Platform
 ```
 
-### Step 2: Install Backend Dependencies
+### Step 2: Backend Setup & Environment Variables
+1. Navigate to the backend directory and install dependencies:
 ```bash
 cd backend
 npm install
 ```
 
-### Step 3: Install Frontend Dependencies
+2. Create a `.env` file inside the `backend/` directory:
+```env
+PORT=5000
+
+# Database Configuration
+# Local MongoDB: mongodb://127.0.0.1:27017/ECommerce
+# Cloud Mongo: mongodb+srv://<username>:<password>@cluster.mongodb.net/ECommerce
+MONGODB_URI=mongodb://127.0.0.1:27017/ECommerce
+
+# JWT Authentication Config
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRES_IN=7d
+```
+
+### Step 3: Frontend Setup & Environment Variables
+1. Open a new terminal session (or navigate back) to the frontend directory and install dependencies:
 ```bash
 cd ../frontend
 npm install
 ```
 
+2. Create a `.env` file inside the `frontend/` directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
 ---
 
-## Run Frontend / Backend
+## Running the Application
 
-### Running the Backend
-
+### 1. Running the Backend
 Navigate to the `backend/` directory and execute:
 
 ```bash
-# Development mode with auto-reload (Nodemon)
-npm run dev
+# Development mode (with auto-reload / nodemon)
+npm run server
 
-# Standard Node execution
+# Standard execution
 npm start
 ```
 The backend server will run at `http://localhost:5000`.
 
-### Running the Frontend
-
-Open a new terminal, navigate to the `frontend/` directory, and execute:
+### 2. Running the Frontend
+Navigate to the `frontend/` directory and execute:
 
 ```bash
 # Development mode
