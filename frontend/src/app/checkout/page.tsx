@@ -17,6 +17,9 @@ function CheckoutForm() {
     paymentMethod: 'COD',
   });
 
+  // 1. State lưu thông báo lỗi cho Số điện thoại
+  const [phoneError, setPhoneError] = useState('');
+
   // 1. Lấy danh sách ID sản phẩm được tick chọn từ URL parameter
   const selectedParam = searchParams.get('selected');
   const selectedIds = selectedParam ? selectedParam.split(',') : [];
@@ -36,7 +39,27 @@ function CheckoutForm() {
   }, 0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Xóa cảnh báo lỗi khi người dùng bắt đầu nhập lại
+    if (name === 'phone' && phoneError) {
+      setPhoneError('');
+    }
+  };
+
+  // 2. Hàm kiểm tra SĐT khi người dùng rời khỏi ô nhập (onBlur)
+  const validatePhone = () => {
+    const phone = formData.phone.trim();
+    const phoneRegex = /^0\d{9}$/;
+
+    if (phone && !phoneRegex.test(phone)) {
+      setPhoneError('Phone number must be exactly 10 digits starting with 0 (e.g., 0901234567).');
+      return false;
+    }
+
+    setPhoneError('');
+    return true;
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -54,15 +77,13 @@ function CheckoutForm() {
       return;
     }
 
-    const phone = formData.phone.trim();
-    const shippingAddress = formData.address.trim();
-
-    // Validate số điện thoại 10 chữ số
-    const phoneRegex = /^0\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      alert('Please enter a valid 10-digit phone number (e.g., 0901234567)!');
+    // Validate lại số điện thoại trước khi submit
+    if (!validatePhone()) {
       return;
     }
+
+    const phone = formData.phone.trim();
+    const shippingAddress = formData.address.trim();
 
     if (!shippingAddress) {
       alert('Please enter shipping address!');
@@ -72,7 +93,6 @@ function CheckoutForm() {
     setSubmitting(true);
 
     try {
-      // Chuẩn hóa danh sách sản phẩm gửi lên Backend
       const formattedItems = displayItems.map((item) => ({
         product: item._id || item.asin,
         name: item.title || 'Product',
@@ -102,7 +122,6 @@ function CheckoutForm() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Nếu mua toàn bộ giỏ hàng -> xóa hết; nếu mua một phần -> chỉ xóa sản phẩm đã mua
         if (displayItems.length === cart.length) {
           await clearCart();
         } else if (typeof removeFromCart === 'function') {
@@ -144,6 +163,7 @@ function CheckoutForm() {
             />
           </div>
 
+          {/* Ô nhập Phone Number có kiểm tra onBlur */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
             <input
@@ -152,9 +172,20 @@ function CheckoutForm() {
               required
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="Your phone number"
-              className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+              onBlur={validatePhone}
+              placeholder="Your phone number (e.g. 0901234567)"
+              className={`w-full border p-3 rounded-lg outline-none transition ${
+                phoneError
+                  ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/20'
+                  : 'border-gray-300 focus:ring-2 focus:ring-emerald-500'
+              }`}
             />
+            {/* Dòng chữ báo lỗi đỏ trực tiếp bên dưới */}
+            {phoneError && (
+              <p className="text-red-500 text-xs font-bold mt-1.5 flex items-center gap-1">
+                ⚠️ {phoneError}
+              </p>
+            )}
           </div>
 
           <div>
@@ -185,7 +216,7 @@ function CheckoutForm() {
 
           <button
             type="submit"
-            disabled={submitting || displayItems.length === 0}
+            disabled={submitting || displayItems.length === 0 || !!phoneError}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition duration-200 mt-6 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? 'Processing...' : `Place Order ($${subtotal.toFixed(2)})`}
@@ -243,7 +274,6 @@ function CheckoutForm() {
   );
 }
 
-// Bọc Component bằng Suspense để tránh lỗi Render SSR khi dùng useSearchParams trong Next.js App Router
 export default function CheckoutPage() {
   return (
     <Suspense
