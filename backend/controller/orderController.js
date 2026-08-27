@@ -213,10 +213,10 @@ const getAllOrders = async (req, res) => {
   }
 };
 
-// UPDATE ORDER STATUS FOR ADMIN (Đã tối ưu chỉ cập nhật field status)
+// UPDATE ORDER STATUS FOR ADMIN
 const updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status: newStatus } = req.body;
 
     const allowedStatus = [
       'Pending',
@@ -225,29 +225,50 @@ const updateOrderStatus = async (req, res) => {
       'Cancelled'
     ];
 
-    if (!allowedStatus.includes(status)) {
+    if (!allowedStatus.includes(newStatus)) {
       return res.status(400).json({
         message: "Invalid order status"
       });
     }
 
-    // Cập nhật trực tiếp trường status và bỏ qua validation các trường cũ
-    const updatedOrder = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { returnDocument: 'after', runValidators: false }
-    );
+    const order = await Order.findById(req.params.id);
 
-    if (!updatedOrder) {
+    if (!order) {
       return res.status(404).json({
         message: "Order not found"
       });
     }
 
+    const oldStatus = order.status;
+
+    if (oldStatus !== 'Cancelled' && newStatus === 'Cancelled') {
+      for (const item of order.products) {
+        const productId = item.product?._id;
+        if (productId) {
+          await Product.findByIdAndUpdate(productId, {
+            $inc: { stock: item.quantity }
+          });
+        }
+      }
+    } else if (oldStatus === 'Cancelled' && newStatus !== 'Cancelled') {
+      for (const item of order.products) {
+        const productId = item.product?._id;
+        if (productId) {
+          await Product.findByIdAndUpdate(productId, {
+            $inc: { stock: -item.quantity }
+          });
+        }
+      }
+    }
+
+    // 3. Cập nhật trạng thái mới cho đơn hàng
+    order.status = newStatus;
+    await order.save();
+
     res.status(200).json({
       success: true,
       message: "Order status updated",
-      order: updatedOrder
+      order
     });
   } catch (error) {
     res.status(500).json({
