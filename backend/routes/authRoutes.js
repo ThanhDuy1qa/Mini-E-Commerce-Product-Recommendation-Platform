@@ -1,27 +1,14 @@
 const express = require('express');
 const router = express.Router();
 
-// 1. Import functions from the Controller
 const { register, login } = require('../controller/authController');
-
-// 2. Import Guards (Middleware) for authorization
 const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
-// ==========================================
-// PUBLIC ROUTES
-// ==========================================
-
-// Register new account API
+// Public Routes
 router.post('/register', register);
-
-// Login API
 router.post('/login', login);
 
-// ==========================================
-// PROTECTED ROUTES
-// ==========================================
-
-// Route for any logged-in User
+// Protected Routes
 router.get('/profile', verifyToken, (req, res) => {
     res.status(200).json({ 
         success: true, 
@@ -30,8 +17,8 @@ router.get('/profile', verifyToken, (req, res) => {
     });
 });
 
-// Route specifically for Administrators (Admin: Role 1)
-router.get('/admin/dashboard', verifyAdmin, (req, res) => {
+// Admin Route
+router.get('/admin/dashboard', verifyToken, verifyAdmin, (req, res) => {
     res.status(200).json({ 
         success: true, 
         message: "Supreme area: Welcome Admin!" 
