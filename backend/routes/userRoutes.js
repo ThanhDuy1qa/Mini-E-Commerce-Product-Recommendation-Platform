@@ -22,11 +22,11 @@ router.put('/profile', verifyToken, updateProfile);
 router.put('/change-password', verifyToken, changePassword);
 
 // =========================
-// ADMIN ROUTES
+// ADMIN ROUTES (Quản lý người dùng)
 // =========================
-router.get('/', verifyAdmin, getAllUsers);
-router.put('/:id/role', verifyAdmin, updateUserRole);
-router.put('/:id/status', verifyAdmin, updateUserStatus); // Update user status (Active/Blocked)
-router.delete('/:id', verifyAdmin, deleteUser);
+router.get('/', verifyToken, verifyAdmin, getAllUsers);
+router.put('/:id/role', verifyToken, verifyAdmin, updateUserRole);
+router.put('/:id/status', verifyToken, verifyAdmin, updateUserStatus);
+router.delete('/:id', verifyToken, verifyAdmin, deleteUser);
 
 module.exports = router;
