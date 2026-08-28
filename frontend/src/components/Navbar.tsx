@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 export default function Navbar() {
-  const { cart, clearCart, fetchCart } = useCart();
+  const { cart, resetCartOnLogout, fetchCart } = useCart(); // <--- Đổi clearCart thành resetCartOnLogout
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
@@ -42,7 +42,7 @@ export default function Navbar() {
   const isAdmin = user?.role === 1;
 
   const handleLogout = () => {
-    clearCart();
+    resetCartOnLogout(); // <--- Đã sửa: Chỉ reset giao diện Client, KHÔNG xóa giỏ hàng trên DB!
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     localStorage.removeItem("mini_cart");

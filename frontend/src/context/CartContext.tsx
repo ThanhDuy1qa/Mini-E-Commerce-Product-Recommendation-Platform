@@ -20,6 +20,7 @@ interface CartContextType {
   updateQuantity: (id: string, delta: number) => void;
   fetchCart: () => Promise<void>;
   clearCart: () => Promise<void>;
+  resetCartOnLogout: () => void; // <--- Thêm hàm này
 }
 
 export const CartContext = createContext<CartContextType>({
@@ -30,6 +31,7 @@ export const CartContext = createContext<CartContextType>({
   updateQuantity: () => {},
   fetchCart: async () => {},
   clearCart: async () => {},
+  resetCartOnLogout: () => {}, // <--- Thêm hàm này
 });
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
@@ -68,16 +70,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (data.success && data.cart && data.cart.items) {
         const formattedCart: CartItem[] = data.cart.items
-        .filter((item: any) => item.product)
-        .map((item: any) => ({
-          _id: item.product._id,
-          asin: item.product.asin || item.product._id,
-          title: item.product.title || item.product.name || "Product",
-          price: Number(item.product.price || 0),
-          image_url: item.product.image_url || item.product.image || "",
-          quantity: item.quantity,
-          stock: item.product.stock ?? 0, 
-        }));
+          .filter((item: any) => item.product)
+          .map((item: any) => ({
+            _id: item.product._id,
+            asin: item.product.asin || item.product._id,
+            title: item.product.title || item.product.name || "Product",
+            price: Number(item.product.price || 0),
+            image_url: item.product.image_url || item.product.image || "",
+            quantity: item.quantity,
+            stock: item.product.stock ?? 0, 
+          }));
 
         setCart(formattedCart);
       }
@@ -102,31 +104,38 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [cart, isInitialized]);
 
-
-const clearCart = async () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  
-  if (token && cart.length > 0) {
-    try {
-      // Xóa từng item trên DB vì Backend chưa có route DELETE /api/cart
-      await Promise.all(
-        cart.map((item) =>
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${item._id || item.asin}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
-    } catch (err) {
-      console.error("Error clearing backend cart items:", err);
+  // Hàm xóa giỏ hàng khi thanh toán thành công (xóa thật trong DB)
+  const clearCart = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    
+    if (token && cart.length > 0) {
+      try {
+        await Promise.all(
+          cart.map((item) =>
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${item._id || item.asin}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          )
+        );
+      } catch (err) {
+        console.error("Error clearing backend cart items:", err);
+      }
     }
-  }
 
-  setCart([]);
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("mini_cart");
-  }
-};
+    setCart([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("mini_cart");
+    }
+  };
+
+  // Hàm CHỈ reset state ở Client khi ĐĂNG XUẤT (KHÔNG xóa trên DB)
+  const resetCartOnLogout = () => {
+    setCart([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("mini_cart");
+    }
+  };
 
   const addToCart = async (product: any, quantityToAdd: number = 1) => {
     const productId = product._id || product.asin;
@@ -215,52 +224,62 @@ const clearCart = async () => {
   };
 
   const updateQuantity = async (id: string, delta: number) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const targetItem = cart.find((item) => (item._id || item.asin) === id);
-  if (!targetItem) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const targetItem = cart.find((item) => (item._id || item.asin) === id);
+    if (!targetItem) return;
 
-  const newQty = (targetItem.quantity || 1) + delta;
+    const newQty = (targetItem.quantity || 1) + delta;
 
-  // Chặn ngay ở Frontend nếu số lượng vượt tồn kho
-  if (targetItem.stock !== undefined && newQty > targetItem.stock) {
-    alert(`Cannot add more. Available stock: ${targetItem.stock}`);
-    return;
-  }
-
-  if (newQty < 1) return;
-
-  if (token) {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity: newQty }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.message || "Failed to update quantity");
-        fetchCart(); // Revert lại giỏ hàng cũ từ DB[cite: 22, 23]
-        return;
-      }
-    } catch (err) {
-      console.error("Error updating cart item on server:", err);
+    if (targetItem.stock !== undefined && newQty > targetItem.stock) {
+      alert(`Cannot add more. Available stock: ${targetItem.stock}`);
       return;
     }
-  }
 
-  setCart((prev) =>
-    (Array.isArray(prev) ? prev : []).map((item) =>
-      (item._id || item.asin) === id ? { ...item, quantity: newQty } : item
-    )
-  );
-};
+    if (newQty < 1) return;
+
+    if (token) {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/items/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ quantity: newQty }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.message || "Failed to update quantity");
+          fetchCart();
+          return;
+        }
+      } catch (err) {
+        console.error("Error updating cart item on server:", err);
+        return;
+      }
+    }
+
+    setCart((prev) =>
+      (Array.isArray(prev) ? prev : []).map((item) =>
+        (item._id || item.asin) === id ? { ...item, quantity: newQty } : item
+      )
+    );
+  };
 
   return (
-    <CartContext.Provider value={{ cart, isInitialized, addToCart, removeFromCart, updateQuantity, fetchCart, clearCart }}>
+    <CartContext.Provider 
+      value={{ 
+        cart, 
+        isInitialized, 
+        addToCart, 
+        removeFromCart, 
+        updateQuantity, 
+        fetchCart, 
+        clearCart,
+        resetCartOnLogout // <--- Thêm vào Provider
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
